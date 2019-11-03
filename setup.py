@@ -30,17 +30,14 @@ PACKAGES=['codemodel', 'codemodel.tests']
 # markdown version
 DESCRIPTION="""
 """
-SHORT_DESCRIPTION="Graphical user interface for OpenPathSampling"
+SHORT_DESCRIPTION="Advanced metaprogramming tools"
 
 # note: leave the triple quotes on separate lines from the classifiers
 CLASSIFIERS="""
 Development Status :: 2 - Pre-Alpha
-Intended Audience :: Science/Research
 License :: OSI Approved :: MIT License  # TODO
 Operating System :: POSIX
 Programming Language :: Python :: 3
-Topic :: Scientific/Engineering :: Bio-Informatics
-Topic :: Scientific/Engineering :: Chemistry
 """
 ####################### USER SETUP AREA #################################
 
