@@ -3,6 +3,18 @@ import collections
 import inspect
 
 def bind_arguments(func, param_dict):
+    # TODO: remove; replace by below
+    """Create inspect.BoundArguments based on func and param_dict
+
+    Parameters
+    ----------
+    func : callable
+    param_dict : dict
+
+    Returns
+    -------
+    inspect.BoundArguments
+    """
     sig = inspect.signature(func)
     param_kinds = collections.defaultdict(list)
 
@@ -38,3 +50,58 @@ def bind_arguments(func, param_dict):
                          **varkw)
 
     return bound
+
+
+def organize_parameter_names(func):
+    """Organize the parameter names by how they will be displayed.
+
+    This prefers to use keywords whenever possible (compared to
+    inspect.BoundParameters, which seems to prefer positional arguments).
+    """
+    sig = inspect.signature(func)
+    param_kinds = collections.defaultdict(list)
+
+    for name, param in sig.parameters.items():
+        param_kinds[param.kind].append(name)
+
+    as_pos = []
+    var_pos = None
+    as_kw = []
+    var_kw = {}
+
+    as_pos += param_kinds[inspect.Parameter.POSITIONAL_ONLY]
+
+    if inspect.Parameter.VAR_POSITIONAL in param_kinds:
+        if len(param_kinds[inspect.Parameter.VAR_POSITIONAL]) > 1:  # no-cover
+            raise RuntimeError("More than 1 variadic positional argument.")
+        var_pos = param_kinds[inspect.Parameter.VAR_POSITIONAL][0]
+        as_pos += param_kinds[inspect.Parameter.POSITIONAL_OR_KEYWORD]
+    else:
+        as_kw += param_kinds[inspect.Parameter.POSITIONAL_OR_KEYWORD]
+
+    as_kw += param_kinds[inspect.Parameter.KEYWORD_ONLY]
+
+    if inspect.Parameter.VAR_KEYWORD in param_kinds:
+        if len(param_kinds[inspect.Parameter.VAR_KEYWORD]) > 1:  # no-cover
+            raise RuntimeError("More than 1 variadic keyword argument.")
+        var_kw = param_kinds[inspect.Parameter.VAR_KEYWORD][0]
+
+    return as_pos, var_pos, as_kw, var_kw
+
+def get_args_kwargs(func, param_dict):
+    as_pos, var_pos, as_kw, var_kw = organize_parameter_names(func)
+    args = [param_dict[p] for p in as_pos]
+    if var_pos:
+        args += param_dict[var_pos]
+    kwargs = {p: param_dict[p] for p in as_kw}
+    kwargs.update(param_dict[var_kw])
+    inspect.signature(func).bind(*args, **kwargs)  # just to test it
+    return args, kwargs
+
+
+def default_call_ast(func, param_dict, prefix=None, assign=None):
+    sig = inspect.signature(func)
+    args = []
+    kwargs = []
+
+    pass
