@@ -105,17 +105,19 @@ def deindented_source(src):
         non-whitespace, and all other lines are deindented by the same
     """
     lines = src.splitlines()
-    min_chars_whitespace = float("inf")
+    n_chars = float("inf")
     for line in lines:
-        if line:
-            idx = 0
-            # we're Python 3, so we assume you're not mixing tabs and spaces
-            while idx < min_chars_whitespace and line[idx] in [" ", '\t']:
-                idx += 1
+        len_line = len(line)
+        idx = 0
 
-            min_chars_whitespace = min(idx, min_chars_whitespace)
+        # we're Python 3, so we assume you're not mixing tabs and spaces
+        while idx < n_chars and idx < len_line and line[idx] in [" ", '\t']:
+            idx += 1
 
-    lines = [line[min_chars_whitespace:] for line in lines]
+        if len_line > idx:
+            n_chars = min(idx, n_chars)
+
+    lines = [line[n_chars:] for line in lines]
     src = "\n".join(lines)
     return src
 
@@ -136,9 +138,11 @@ def is_return_dict_function(func):
     """
     tree = ast.parse(deindented_source(inspect.getsource(func)))
     func_body = tree.body[0].body
+    # don't just do func_body[-1] because there might be unreachable
+    # statements after the return. First outer-scope return must be reached!
     for node in func_body:
-        if isinstance(node, ast.Return) and isinstance(node.value, ast.Dict):
-            return True
+        if isinstance(node, ast.Return):
+            return isinstance(node.value, ast.Dict)
 
     return False
 

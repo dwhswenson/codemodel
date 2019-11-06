@@ -59,6 +59,10 @@ def test_deindented_source(src):
     tree = ast.parse(deindented)
     assert astor.to_source(tree) == not_indented[1:]  # strip leading \n
 
+def test_deindented_source_edge_case():
+    src = "\n".join([" ", "    def foo():", "        pass"])
+    expected = "\n".join(["", "def foo():", "    pass"])
+    assert deindented_source(src) == expected
 
 class ValidateFuncHolder(object):
     def dict_return_global(foo):
