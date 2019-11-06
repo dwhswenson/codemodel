@@ -182,10 +182,10 @@ def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
     ast.AST :
         node that represents this statement
     """
-    args, kwargs = get_args_kwargs(func, param_ast_dict)
-    ast_args = [to_ast(a) for a in args]
+    ast_args, kwargs = get_args_kwargs(func, param_ast_dict)
+    # ast_args = [to_ast(a) for a in args]
     ast_kwargs = [
-        ast.keyword(arg=param, value=to_ast(kwargs[param]))
+        ast.keyword(arg=param, value=kwargs[param])
         for param in kwargs
     ]
     if prefix is not None:
@@ -199,6 +199,8 @@ def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
     if assign is None:
         root_node = func_node
     else:
-        root_node = ast.Assign(target=ast.Name(id=assign, ctx=ast.Store()),
-                               value=func_node)
+        root_node = ast.Assign(
+            targets=[ast.Name(id=assign, ctx=ast.Store())],
+            value=func_node
+        )
     return root_node
