@@ -99,9 +99,29 @@ def get_args_kwargs(func, param_dict):
     return args, kwargs
 
 
-def default_call_ast(func, param_dict, prefix=None, assign=None):
-    sig = inspect.signature(func)
-    args = []
-    kwargs = []
+def deindented_source(src):
+    lines = src.splitlines()
+    min_chars_whitespace = float("inf")
+    for line in lines:
+        if line:
+            idx = 0
+            while idx < min_chars_whitespace and line[idx] in [" ", '\t']:
+                idx += 1
 
-    pass
+            min_chars_whitespace = min(idx, min_chars_whitespace)
+
+    print(min_chars_whitespace)
+    lines = [line[min_chars_whitespace:] for line in lines]
+    src = "\n".join(lines)
+    return src
+
+
+def is_return_dict_function(func):
+    """Check whether a function returns a dictionary"""
+    tree = ast.parse(deindented_source(inspect.getsource(func)))
+    func_body = tree.body[0].body
+    for node in func_body:
+        if isinstance(node, ast.Return) and isinstance(node.value, ast.Dict):
+            return True
+
+    return False
