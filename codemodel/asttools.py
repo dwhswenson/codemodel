@@ -2,56 +2,6 @@ import ast
 import collections
 import inspect
 
-def bind_arguments(func, param_dict):
-    # TODO: remove; replace by below
-    """Create inspect.BoundArguments based on func and param_dict
-
-    Parameters
-    ----------
-    func : callable
-    param_dict : dict
-
-    Returns
-    -------
-    inspect.BoundArguments
-    """
-    sig = inspect.signature(func)
-    param_kinds = collections.defaultdict(list)
-
-    for name, param in sig.parameters.items():
-        param_kinds[param.kind].append(name)
-
-    def kind_to_list(kind):
-        return [param_dict[p] for p in param_kinds[kind]]
-
-    def kind_to_dict(kind):
-        return {p: param_dict[p] for p in param_kinds[kind]}
-
-    pos_only = kind_to_list(inspect.Parameter.POSITIONAL_ONLY)
-    varpos_list = kind_to_list(inspect.Parameter.VAR_POSITIONAL)
-    pos_kw = kind_to_dict(inspect.Parameter.POSITIONAL_OR_KEYWORD)
-    kw_only = kind_to_dict(inspect.Parameter.KEYWORD_ONLY)
-    varkw_list = kind_to_dict(inspect.Parameter.VAR_KEYWORD)
-
-    # next two checks should never occur
-    if len(varpos_list) > 1:  # no-cover
-        raise RuntimeError("More than 1 variadic positional argument.")
-
-    if len(varkw_list) > 1:  # no-cover
-        raise RuntimeError("More than 1 variadic keyword argument.")
-
-    varpos = varpos_list[0] if varpos_list else []
-    varkw = list(varkw_list.values())[0] if varkw_list else {}
-
-    if not varpos:
-        bound = sig.bind(*pos_only, **pos_kw, **kw_only, **varkw)
-    else:
-        bound = sig.bind(*pos_only, *pos_kw.values(), *varpos, **kw_only,
-                         **varkw)
-
-    return bound
-
-
 def organize_parameter_names(func):
     """Organize the parameter names by how they will be displayed.
 
@@ -85,7 +35,7 @@ def organize_parameter_names(func):
     as_pos = []
     var_pos = None
     as_kw = []
-    var_kw = {}
+    var_kw = None
 
     as_pos += param_kinds[inspect.Parameter.POSITIONAL_ONLY]
 
@@ -109,7 +59,9 @@ def organize_parameter_names(func):
 def get_args_kwargs(func, param_dict):
     """Get *args and **kwargs appropriate to do func(*args, **kwargs).
 
-    This uses our preference for keywords over positional arguments.
+    This uses our preference for keywords over positional arguments. Note
+    that the input ``param_dict`` can contain extra parameters that are
+    *not* used in the callable.
 
     Parameters
     ----------
@@ -128,7 +80,8 @@ def get_args_kwargs(func, param_dict):
     if var_pos:
         args += param_dict[var_pos]
     kwargs = {p: param_dict[p] for p in as_kw}
-    kwargs.update(param_dict[var_kw])
+    if var_kw:
+        kwargs.update(param_dict[var_kw])
     inspect.signature(func).bind(*args, **kwargs)  # just to test it
     return args, kwargs
 
@@ -190,18 +143,58 @@ def is_return_dict_function(func):
     return False
 
 
-def return_dict_func_to_ast_body(func):
+def return_dict_func_to_ast_body(func, param_ast_dict):
     """
     Take a function that returns a dict and prepares it for the body.
     """
     pass
 
-def instantiation_func_to_ast(func):
+def instantiation_func_to_ast(func, param_ast_dict, assign=None):
     """
     """
     pass
 
-def create_call_ast(func, param_dict, assign=None, prefix=None):
+def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
+    """Creates a call of the function from scratch.
+
+    Very similar to ``assign = prefix.func(**param_dict)``
+
+    Parameters
+    ----------
+    func : callable
+        the function for the call
+    param_dict : dict
+        dictionary of the parameters, maps a string parameter name to the
+        AST node that should replace it
+    assign : str
+        name to assign the result to, or None if no assignment should be
+        done
+    prefix : str
+        package name containing the func or None if not used
+
+
+    Returns
+    -------
+    ast.AST :
+        node that represents this statement
     """
-    """
-    pass
+    args, kwargs = get_args_kwargs(func, param_ast_dict)
+    ast_args = [to_ast(a) for a in args]
+    ast_kwargs = [
+        ast.keyword(arg=param, value=to_ast(kwargs[param]))
+        for param in kwargs
+    ]
+    if prefix is not None:
+        funcname = ast.Attribute(value=ast.Name(id=prefix, ctx=ast.Load()),
+                                 attr=func.__name__)
+    else:
+        funcname = ast.Name(id=func.__name__)
+
+    func_node = ast.Call(func=funcname, args=ast_args, keywords=ast_kwargs)
+
+    if assign is None:
+        root_node = func_node
+    else:
+        root_node = ast.Assign(target=ast.Name(id=assign, ctx=ast.Store()),
+                               value=func_node)
+    return root_node
