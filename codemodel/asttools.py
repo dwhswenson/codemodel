@@ -26,10 +26,14 @@ def organize_parameter_names(func):
         parameter name for variadic keyword arguments (usually ``kwargs``),
         or None if no variadic keywork arguments
     """
+    # TODO: this part can depend get the parameters list from either func
+    # signature (as now) or from CodeModel.parameters ... enables a lot of
+    # this to be done without the package installed
     sig = inspect.signature(func)
-    param_kinds = collections.defaultdict(list)
+    parameters = sig.parameters
 
-    for name, param in sig.parameters.items():
+    param_kinds = collections.defaultdict(list)
+    for name, param in parameters.items():
         param_kinds[param.kind].append(name)
 
     as_pos = []
@@ -146,17 +150,85 @@ def is_return_dict_function(func):
 
     return False
 
+class ReplaceName(ast.NodeTransformer):
+    def __init__(self, param_ast_dict):
+        super().__init__()
+        self.param_ast_dict = param_ast_dict
+        #self.node_replacers = {k: node_replacer(v)
+        #                       for k, v in param_ast_dict.items()}
+
+    def visit_Name(self, node):
+        if node.id in self.param_ast_dict:
+            value = self.param_ast_dict[node.id]
+            new_node = self.param_ast_dict[node.id]
+            # self.generic_visit(new_node)   # maybe?
+            return ast.copy_location(new_node, node)
+        return self.generic_visit(node)
 
 def return_dict_func_to_ast_body(func, param_ast_dict):
     """
-    Take a function that returns a dict and prepares it for the body.
+    Get the body of a return dict function; return replaced with assignment.
+
+    Parameters
+    ----------
+    func : callable
+    param_ast_dict : dict
+        mapping of parameter names to AST nodes that can replace them.
+
+    Returns
+    -------
+    list of ast.AST :
+        nodes in the body of the function, ready to be made part of a longer
+        function
     """
-    pass
+    tree = ast.parse(deindented_source(inspect.getsource(func)))
+    body = []
+    for node in tree.body[0].body:
+        if isinstance(node, ast.Return):
+            break
+        body.append(node)
+
+    dict_node = node.value
+    #validate(func, tree, dict_node)
+
+    key_names = [key.s for key in node.value.keys]
+
+    assignments = [
+        ast.Assign(targets=[ast.Name(key)], value=value)
+        for key, value in zip(key_names, node.value.values)
+        if not (isinstance(value, ast.Name) and value.id == key)
+    ]
+    body.extend(assignments)
+    body_tree = ast.Module(body=body)
+    # TODO: this hasn't used hte replace yet
+    replace = ReplaceName(param_ast_dict)
+    body_tree = replace.visit(body_tree)
+    return body_tree
+
+
+class ReplaceReturnWithAssign(ast.NodeTransformer):
+    def __init__(self, name):
+        super().__init__()
+        self.name = name
+
+    def visit_Return(self, node):
+        new_node = ast.Assign(
+            targets=[ast.Name(id=self.name, ctx=ast.Store())],
+            value=node.value
+        )
+        return ast.copy_location(new_node, node)
 
 def instantiation_func_to_ast(func, param_ast_dict, assign=None):
+    """Get the body of any functions, converting the returns to assignment.
     """
-    """
-    pass
+    tree = ast.parse(deindented_source(inspect.getsource(func)))
+    if assign is None:
+        assign = "_"
+    replace_returns = ReplaceReturnWithAssign(assign)
+    replace_names = ReplaceName(param_ast_dict)
+    tree = replace_names.visit(tree)
+    tree = replace_returns.visit(tree)
+    return tree
 
 def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
     """Creates a call of the function from scratch.
@@ -167,7 +239,7 @@ def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
     ----------
     func : callable
         the function for the call
-    param_dict : dict
+    param_dict : dic6
         dictionary of the parameters, maps a string parameter name to the
         AST node that should replace it
     assign : str
