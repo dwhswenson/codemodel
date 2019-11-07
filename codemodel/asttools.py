@@ -158,7 +158,7 @@ class ReplaceName(ast.NodeTransformer):
         #                       for k, v in param_ast_dict.items()}
 
     def visit_Name(self, node):
-        if node.id in self.param_ast_dict:
+        if node.id in self.param_ast_dict and isinstance(node.ctx, ast.Load):
             value = self.param_ast_dict[node.id]
             new_node = self.param_ast_dict[node.id]
             # self.generic_visit(new_node)   # maybe?
@@ -182,6 +182,7 @@ def return_dict_func_to_ast_body(func, param_ast_dict):
         function
     """
     tree = ast.parse(deindented_source(inspect.getsource(func)))
+
     body = []
     for node in tree.body[0].body:
         if isinstance(node, ast.Return):
@@ -194,15 +195,16 @@ def return_dict_func_to_ast_body(func, param_ast_dict):
     key_names = [key.s for key in node.value.keys]
 
     assignments = [
-        ast.Assign(targets=[ast.Name(key)], value=value)
+        ast.Assign(targets=[ast.Name(key, ctx=ast.Store())], value=value)
         for key, value in zip(key_names, node.value.values)
         if not (isinstance(value, ast.Name) and value.id == key)
     ]
     body.extend(assignments)
     body_tree = ast.Module(body=body)
-    # TODO: this hasn't used hte replace yet
+
     replace = ReplaceName(param_ast_dict)
-    body_tree = replace.visit(body_tree)
+    tree = replace.visit(tree)
+
     return body_tree
 
 
@@ -220,15 +222,29 @@ class ReplaceReturnWithAssign(ast.NodeTransformer):
 
 def instantiation_func_to_ast(func, param_ast_dict, assign=None):
     """Get the body of any functions, converting the returns to assignment.
+
+    Parameters
+    ----------
+    func : callable
+    param_ast_dict : dict
+        mapping of parameter names (for func) to ast.AST nodes
+    assign : str
+        value to assign the return value of the function to
+
+    Returns
+    -------
+    ast.AST :
+        node that represents this statement
     """
     tree = ast.parse(deindented_source(inspect.getsource(func)))
+    body_tree = ast.Module(body=tree.body[0].body)
     if assign is None:
         assign = "_"
     replace_returns = ReplaceReturnWithAssign(assign)
     replace_names = ReplaceName(param_ast_dict)
-    tree = replace_names.visit(tree)
-    tree = replace_returns.visit(tree)
-    return tree
+    body_tree = replace_names.visit(body_tree)
+    body_tree = replace_returns.visit(body_tree)
+    return body_tree
 
 def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
     """Creates a call of the function from scratch.

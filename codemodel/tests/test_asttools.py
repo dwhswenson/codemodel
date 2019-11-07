@@ -71,13 +71,24 @@ class ValidateFuncHolder(object):
         return {'foo': bar}
 
     def valid(foo):
+        bar = 1
         return {'foo': foo}
 
+    def valid_foo_changed(foo):
+        bar = 1
+        return {'foo': foo * 2}
+
     def no_return(foo):
+        bar = 1
         pass
 
     def return_non_dict(foo):
+        bar = 1
         return foo
+
+    def call_something(foo):
+        bar = 1
+        return baz(foo, bar)
 
 @pytest.mark.parametrize("func,expected", [
     (ValidateFuncHolder.dict_return_global, True),
@@ -116,4 +127,27 @@ def test_create_call_ast_prefix():
     tree = create_call_ast(FuncSigHolder.foo_pkw, params, prefix="foo")
     assert astor.to_source(tree) == "foo.foo_pkw(pkw='pkw')\n"
 
+@pytest.mark.parametrize("func, extra_code", [
+    (ValidateFuncHolder.valid, ""),
+    (ValidateFuncHolder.valid_foo_changed, "foo = 'qux' * 2\n"),
+])
+def test_return_dict_func_to_ast_body(func, extra_code):
+    params = {'foo': ast.Str("qux")}
+    tree = return_dict_func_to_ast_body(func, params)
+    assert astor.to_source(tree) == "bar = 1\n" + extra_code
 
+# this one will be parametrized
+@pytest.mark.parametrize("func, assign, extra_code", [
+    (ValidateFuncHolder.call_something, "assigned",
+     "assigned = baz('qux', bar)"),
+    (ValidateFuncHolder.call_something, None, "_ = baz('qux', bar)"),
+    (ValidateFuncHolder.no_return, "assigned", "pass"),
+    (ValidateFuncHolder.no_return, None, "pass"),
+    (ValidateFuncHolder.return_non_dict, "assigned", "assigned = 'qux'"),
+    (ValidateFuncHolder.return_non_dict, None, "_ = 'qux'"),
+
+])
+def test_instantiation_func_to_ast(func, assign, extra_code):
+    params = {'foo': ast.Str("qux")}
+    tree = instantiation_func_to_ast(func, params, assign)
+    assert astor.to_source(tree) == "bar = 1\n" + extra_code + '\n'
