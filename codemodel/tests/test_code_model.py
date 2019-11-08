@@ -5,6 +5,61 @@ import inspect
 
 import codemodel
 from codemodel.code_model import *
+from codemodel.code_model import _unshadow_property_error
+
+import collections
+
+
+class SectionsExample(object):
+    # in the examples, we'll use the input num=3 and the variable name
+    # my_counter for the result of the main call
+    prepare_data_code = """
+    data = []
+    for i in range(1, 3 + 1):
+        data.extend([i] * i)
+    """
+    @staticmethod
+    def prepare_data(num):
+        data = []
+        for i in range(1, num + 1):
+            data.extend([i] * i)
+
+        return {'data': data}
+
+    make_counter_code = """
+    import collections
+    my_counter = collections.Counter(data)
+    """
+    @staticmethod
+    def make_counter(data):
+        import collections
+        return collections.Counter(data)
+
+    after_making_code = """
+    my_counter.update([3])
+    """
+    @staticmethod
+    def after_making(counter):
+        counter.update([3])
+        return {}
+
+    ast_after_making_code = """
+    my_counter.update([4])
+    """
+    @staticmethod
+    def pure_ast_after_making(**params_dict):
+        import ast
+        return [ast.Call(
+            func=ast.Attribute(value=ast.Name(id='counter', ctx=ast.Load()),
+                               attr='update'),
+            args=[ast.List(elts=[ast.Num(4)])]  # gasp! 4 not 3? danger!
+        )]
+
+
+def exists_setup(afile):
+    import os
+    abspath = os.path.abspath(afile)
+    return os.path.exists(abspath)
 
 class NameMock(object):
     # unittest.mock.Mock has a name attribute, so can't mock it out
@@ -16,10 +71,13 @@ class TestCodeModel(object):
         from os.path import exists
         foo_param = codemodel.Parameter.from_values(name='foo',
                                                     param_type="Unknown")
-        exists_param = codemodel.Parameter(
+        self.exists_param = codemodel.Parameter(
             parameter=inspect.signature(exists).parameters['path'],
             param_type="Unknown"
         )
+        counter_sig = inspect.signature(collections.Counter)
+        counter_params = [codemodel.Parameter(param, "Unknown")
+                          for param in counter_sig.parameters.values()]
 
         ospath = mock.Mock(import_statement="from os import path",
                            implicit_prefix="path",
@@ -30,8 +88,9 @@ class TestCodeModel(object):
         self.models = {
             'unpackaged': CodeModel(name="func", parameters=[foo_param]),
             'packaged': CodeModel(name="exists",
-                                  parameters=[exists_param],
-                                  package=ospath)
+                                  parameters=[self.exists_param],
+                                  package=ospath),
+            'counter': CodeModel(name="Counter", parameters=counter_params),
         }
 
         self.dcts = {
@@ -81,3 +140,108 @@ class TestCodeModel(object):
     def test_func(self):
         import os.path
         assert self.models['packaged'].func == os.path.exists
+
+    @pytest.mark.parametrize("pkg, setup, expected", [
+        (None, None, None),
+        (True, None, True),
+        (None, exists_setup, {50: exists_setup}),
+        (None, {50: exists_setup}, {50: exists_setup}),
+    ])
+    def test_set_setup(self, pkg, setup, expected):
+        if pkg:
+            pkg = self.packages['packaged']
+        if expected is True:
+            from os.path import exists
+            expected = {50: exists}
+
+        model = CodeModel("exists", [self.exists_param], pkg, setup)
+        assert model.setup == expected
+
+    def test_set_ast_sections(self):
+        pytest.skip()
+
+    @pytest.mark.parametrize("setup, expected", [
+        (None, (None, None, None)),
+        ({50: exists_setup}, ([], exists_setup, [])),
+        ({10: SectionsExample.prepare_data,
+          50: SectionsExample.make_counter,
+          70: SectionsExample.after_making},
+         ([SectionsExample.prepare_data], SectionsExample.make_counter,
+          [SectionsExample.after_making])),
+    ])
+    def test_call_func_order(self, setup, expected):
+        assert CodeModel._call_func_order(setup) == expected
+
+    @pytest.mark.parametrize("setup", [
+        {50: SectionsExample.prepare_data},  # too few
+        {50: SectionsExample.make_counter, 60: exists_setup}  # too many
+    ])
+    def test_call_func_order_error(self, setup):
+        with pytest.raises(ValueError):
+            CodeModel._call_func_order(setup)
+
+    def test_instantiate(self):
+        pytest.skip()
+
+    def test_ast_section(self):
+        pytest.skip()
+
+
+class _UnshadowPropertyExample(object):
+    def __init__(self):
+        self.has_run = False
+
+    @property
+    def bad_property(self):
+        raise RuntimeError("Bad!")
+
+    @property
+    def self_healing(self):
+        if not self.has_run:
+            self.has_run = True
+            raise RuntimeError("Bad once")
+        else:
+            return "healed!"
+
+    @property
+    def good(self):
+        return "fine"
+
+    def other(self):
+        pass
+
+@pytest.mark.parametrize("prop", ['bad_property'])
+def test_unshadow_property_error_gives_error(prop):
+    obj = _UnshadowPropertyExample()
+    ErrorType = {'bad_property': RuntimeError}[prop]
+    with pytest.raises(ErrorType):
+        _unshadow_property_error(obj, prop)
+
+@pytest.mark.parametrize("prop", ['good', 'other', 'does_not_exist'])
+def test_unshadow_property_error_gives_result(prop):
+    obj = _UnshadowPropertyExample()
+    result = {'good': "fine",
+              'other': None,
+              'does_not_exist': None}[prop]
+    assert _unshadow_property_error(obj, prop) == result
+
+def test_unshadow_property_error_self_healing():
+    obj = _UnshadowPropertyExample()
+    prop = 'self_healing'
+    result = 'healed!'
+    with pytest.raises(RuntimeError):
+        _unshadow_property_error(obj, prop)
+    assert _unshadow_property_error(obj, prop) == result
+
+class TestInstance(object):
+    def setup(self):
+        pass
+
+    def test_getattr(self):
+        pytest.skip()
+
+    def test_instance(self):
+        pytest.skip()
+
+    def test_code_sections(self):
+        pytest.skip()

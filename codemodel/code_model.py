@@ -28,6 +28,8 @@ class CodeModel(object):
         self.parameters = parameters
         self.package = package
 
+        self.setup = self._set_setup(setup, package)
+
         if self.package is None and setup is None:
             setup = {}
 
@@ -35,27 +37,44 @@ class CodeModel(object):
             # TODO: maybe bind it? https://stackoverflow.com/a/1015405
             ...
 
+        self._pre_call, self._main_call, self._post_call = \
+                self._call_func_order(self.setup)
+
+    def _set_setup(self, setup, package):
+        if package is None and setup is None:
+            return None
+
         if setup is None:
             setup = {50: self.func}
         elif callable(setup):
             setup = {50: setup}
 
-        self.setup = setup
+        return setup
 
-        # TODO: separate this stuff?
-        if self.setup:
-            funcs = [func for (_, func) in sorted(list(self.setup.items()))]
-            non_dict_return = [f for f in funcs
-                               if not asttools.is_return_dict_function(f)]
-            if len(non_dict_return) != 1:
-                raise ValueError("Unable to identify instantiation ",
-                                 " function. Found %d non-dict returning ",
-                                 " functions." % len(non_dict_return))
-            self._instantiator = non_dict_return[0]
-            idx = funcs.index(self._instantiator)
-            self._pre_instantiator = funcs[:idx]
-            self._post_instantiator = funcs[idx+1:]
-            # TODO: validate each of the functions here
+    @staticmethod
+    def _set_ast_sections(ast_sections, setup):
+        missing = [idx for idx in setup if idx not in ast_sections]
+        for sec_id in missing:
+            ... # TODO
+
+    @staticmethod
+    def _call_func_order(setup):
+        if setup is None:
+            return (None, None, None)
+
+        funcs = [func for (_, func) in sorted(list(setup.items()))]
+        non_dict_return = [f for f in funcs
+                           if not asttools.is_return_dict_function(f)]
+        if len(non_dict_return) != 1:
+            raise ValueError(("Unable to identify main call function. "
+                              + "Found %d non-dict returning "
+                              + "functions.") % len(non_dict_return))
+        main_call = non_dict_return[0]
+        idx = funcs.index(main_call)
+        pre_call = funcs[:idx]
+        post_call = funcs[idx+1:]
+        # TODO: validate each of the functions here
+        return (pre_call, main_call, post_call)
 
 
     def __hash__(self):
@@ -112,13 +131,13 @@ class CodeModel(object):
 
         func_param_dict = dict(instance.param_dict)  # copy
 
-        for func in self._pre_instantiator:
+        for func in self._pre_call:
             # TODO: fix this for positional arguments
             func_param_dict = func(**func_param_dict)
 
-        obj = self._instantiator(**func_param_dict)
+        obj = self._main_call(**func_param_dict)
 
-        for func in self._post_instantiator:
+        for func in self._post_call:
             func_param_dict = func(**func_param_dict)
 
         return obj
@@ -137,7 +156,7 @@ class CodeModel(object):
                 # params -- plus, can override this func in a subclass
                 sec_ast = self._default_setup_ast(param_dict,
                                                   assign=instance.name)
-            elif func == self._instantiator:
+            elif func == self._main_call:
                 sec_ast = ...  # general case for instantiators
             else:
                 sec_ast, params = ...  # parse in other cases
@@ -152,7 +171,7 @@ class CodeModel(object):
 
 
 def _unshadow_property_error(self, item):
-    # I know I'd seen this problem before
+    # I know I'd seen this problem before: the OPS DynamicsEngine had same
     dct = self.__class__.__dict__
     if item in dct:
         p = dct[item]
@@ -186,7 +205,11 @@ class Instance(object):
 
     def __getattr__(self, item):
         # NOTE: getattr in a property can shadow errors
-        _unshadow_property_error(self, item)
+        bad_property_check = _unshadow_property_error(self, item)
+        if bad_property_check is not None:
+            # only happens if self-healing
+            return bad_property_check
+
         try:
             return self.param_dict[item]
         except KeyError:
@@ -197,13 +220,14 @@ class Instance(object):
 
     @property
     def instance(self):
+        """functional version of the instance this represents"""
         if self._instance is None:
             self._instance = self.code_model.instantiate(self)
         return self._instance
 
-    # TODO: add properties for prepare_as_code, setup_as_code,
     @property
     def code_sections(self):
+        """code for this instance, as a sections dictionary"""
         return self.code_model.code_sections(self)
 
     def __str__(self):
