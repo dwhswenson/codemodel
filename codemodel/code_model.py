@@ -1,5 +1,6 @@
 import importlib
 
+import codemodel
 from codemodel import imports
 
 class CodeModel(object):
@@ -22,22 +23,30 @@ class CodeModel(object):
         self.parameters = parameters
         self.package = package
 
+    def __hash__(self):
+        return hash((self.name, tuple(self.parameters), self.package))
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
+    def __repr__(self):  # no-cover
+        repr_str = ("CodeModel(name={c.name}, parameters={c.parameters} "
+                    + "package={c.package})")
+        return repr_str.format(c=self)
+
     # to_dict and from_dict are  not designed for generalized nesting
     # because, well, why make the effort?
     def to_dict(self):
         package_name = self.package.name if self.package else None
         return {'name': self.name,
-                'parameters': [p.to_dict() for p in self.parameters],
-                'package': package_name}
+                'parameters': [p.to_dict() for p in self.parameters]}
 
     @classmethod
     def from_dict(cls, dct, package=None):
         dct = dict(dct)  # make a copy
         params = [codemodel.Parameter.from_dict(p) for p in dct['parameters']]
         dct['parameters'] = params
-        if package:
-            dct['package'] = package
-        return cls(**dct)
+        return cls(**dct, package=package)
 
     @property
     def func(self):
