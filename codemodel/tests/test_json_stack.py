@@ -1,8 +1,9 @@
 import pytest
 import inspect
+import json
+import tempfile
 
 from codemodel.json_stack import *
-
 
 def func(pkw, *, kw='foo', kw2=None):
     # empty function; signature used in testing
@@ -117,5 +118,9 @@ class TestPackage(object):
         reserialized = deserialized.to_dict()
         assert serialized == reserialized
 
-def test_load_json():
-    pass
+    def test_load_json(self):
+        with tempfile.NamedTemporaryFile(suffix=".json", mode='w+') as tmp:
+            json.dump(self.package.to_dict(), tmp)
+            tmp.flush()
+            loaded = load_json(tmp.name)
+            assert loaded == self.package

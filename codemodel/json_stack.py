@@ -1,3 +1,4 @@
+import json
 import inspect
 
 import codemodel
@@ -149,6 +150,4 @@ def load_json(filename):
     with open(filename, mode='r') as f:
         dct = json.load(f)
 
-    functions = [Function.from_dict(func_dct)
-                 for func_dct in dct['functions']]
-    return functions
+    return Package.from_dict(dct)
