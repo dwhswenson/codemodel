@@ -26,13 +26,18 @@ class Parameter(object):
         self.param_type = param_type
         self.desc = desc
 
-    def __repr__(self):
+    def __repr__(self):  # no-cover
         return "Parameter({p}, param_type={t}, desc={d})".format(
             p=repr(self.parameter),
             t=self.param_type,
             d=self.desc
         )
 
+    def __hash__(self):
+        return hash((self.parameter, self.param_type, self.desc))
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
 
     @classmethod
     def from_values(cls, name, param_type, desc=None,
@@ -51,7 +56,7 @@ class Parameter(object):
 
     @property
     def default(self):
-        if not self.has_default:
+        if self.has_default:
             return self.parameter.default
         else:
             return None
