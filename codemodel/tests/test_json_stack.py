@@ -74,14 +74,48 @@ class TestParameter(object):
 
 
 class TestPackage(object):
+    def setup(self):
+        from os.path import exists
+        callables = [codemodel.CodeModel(
+            name="exists",
+            parameters=[Parameter(
+                inspect.signature(exists).parameters['path'],
+                param_type="Unknown"
+            )]
+        )]
+        self.package = Package(name="ospath",
+                               callables=callables,
+                               import_statement="from os import path",
+                               implicit_prefix="path")
+
+        self.dct = {
+            'name': 'ospath',
+            'import_statement': "from os import path",
+            'implicit_prefix': "path",
+            'model_types': ['CodeModel'],
+            'callables': [{
+                'name': 'exists',
+                'parameters': [{'name': 'path',
+                                'param_type': 'Unknown',
+                                'desc': None,
+                                'kind': "POSITIONAL_OR_KEYWORD",
+                                'default': None,
+                                'has_default': False}],
+            }]
+        }
+
     def test_to_dict(self):
-        pass
+        assert self.package.to_dict() == self.dct
 
     def test_from_dict(self):
-        pass
+        assert Package.from_dict(self.dct) == self.package
 
     def test_dict_serialize_cycle(self):
-        pass
+        serialized = self.package.to_dict()
+        deserialized = Package.from_dict(serialized)
+        assert deserialized == self.package
+        reserialized = deserialized.to_dict()
+        assert serialized == reserialized
 
 def test_load_json():
     pass

@@ -90,6 +90,24 @@ class Parameter(object):
 class Package(object):
     def __init__(self, name, callables, import_statement=None,
                  implicit_prefix=None, model_types=None):
+        """Container for CodeModel callables, representing a package.
+
+        Parameters
+        ----------
+        name : str
+            package name
+        callables : list of :class:`.CodeModel`
+            callables contained in this package
+        import_statement : str
+            the statemetn used to import the package (e.g., "import sys" or
+            "from os import path")
+        implicit_prefix: str
+            callables are prefixed with this after the import statement,
+            e.g., "import os" as import statement would makethis "os"
+        model_types : list of str
+            string names for CodeModel subclass to be used; one for each
+            callable. Only relevant in event of subclassing.
+        """
         if implicit_prefix is None:
             implicit_prefix = ""
 
@@ -101,6 +119,13 @@ class Package(object):
         self.implicit_prefix = implicit_prefix
         self.callables = callables
         self.model_types = model_types
+
+    def __hash__(self):
+        return hash((self.name, self.import_statement, self.implicit_prefix,
+                     tuple(self.model_types), tuple(self.callables)))
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
 
     def to_dict(self):
         return {'name': self.name,
