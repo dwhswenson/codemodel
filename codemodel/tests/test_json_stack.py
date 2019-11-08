@@ -120,7 +120,8 @@ class TestPackage(object):
 
     def test_load_json(self):
         with tempfile.NamedTemporaryFile(suffix=".json", mode='w+') as tmp:
-            json.dump(self.package.to_dict(), tmp)
+            json.dump([self.package.to_dict()], tmp)
             tmp.flush()
             loaded = load_json(tmp.name)
-            assert loaded == self.package
+            assert len(loaded) == 1
+            assert loaded[0] == self.package

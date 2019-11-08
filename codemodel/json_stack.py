@@ -147,7 +147,20 @@ class Package(object):
 
 
 def load_json(filename):
-    with open(filename, mode='r') as f:
-        dct = json.load(f)
+    """Load packages from a JSON file.
 
-    return Package.from_dict(dct)
+    Parameters
+    ----------
+    filename : str
+        name of the file to load
+
+    Returns
+    -------
+    list :
+        list of packages in the file
+    """
+    with open(filename, mode='r') as f:
+        json_data = json.load(f)
+
+    packages = [Package.from_dict(dct) for dct in json_data]
+    return packages
