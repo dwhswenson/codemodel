@@ -1,3 +1,4 @@
+import functools
 import importlib
 
 import codemodel
@@ -29,18 +30,18 @@ class CodeModel(object):
         self.package = package
 
         self.setup = self._set_setup(setup, package)
-
-        if self.package is None and setup is None:
-            setup = {}
-
-        if ast_sections is not None:
-            # TODO: maybe bind it? https://stackoverflow.com/a/1015405
-            ...
-
         self._pre_call, self._main_call, self._post_call = \
                 self._call_func_order(self.setup)
 
+        if ast_sections is None:
+            ast_sections = {}
+
+        ast_setup = {} if self.setup is None else self.setup
+        self._ast_funcs = self._set_ast_sections(ast_sections, ast_setup)
+
+
     def _set_setup(self, setup, package):
+        """set the value of self.setup"""
         if package is None and setup is None:
             return None
 
@@ -51,11 +52,33 @@ class CodeModel(object):
 
         return setup
 
-    @staticmethod
-    def _set_ast_sections(ast_sections, setup):
+    def _set_ast_sections(self, ast_sections, setup):
+        """create partials for AST writing"""
+        ast_sections = dict(ast_sections)  # copy
         missing = [idx for idx in setup if idx not in ast_sections]
         for sec_id in missing:
-            ... # TODO
+            func = setup[sec_id]
+            # safety here in case self.func doesn't exist (no `package`)
+            self_func = self.func if self.package else None
+            if func == self_func:
+                # special here because we don't want to look *inside* the
+                # code of self.func, and wrappers wouldn't use explicit
+                # params -- plus, can override this func in a subclass
+                sec_ast = self._default_setup_ast
+            elif func == self._main_call:
+                sec_ast = functools.partial(
+                    asttools.instantiation_func_to_ast,
+                    func=func
+                )
+            else:
+                sec_ast = functools.partial(
+                    asttools.return_dict_func_to_ast_body,
+                    func=func
+                )
+
+            ast_sections[sec_id] = sec_ast
+        return ast_sections
+
 
     @staticmethod
     def _call_func_order(setup):
@@ -146,20 +169,18 @@ class CodeModel(object):
         return asttools.default_ast(self.func, param_dict,
                                     prefix=self.prefix, assign=assign)
 
-    def ast_sections(self, instance):
+    def instance_ast_sections(self, instance):
+        # TODO: add the to_ast function
         params = dict(instance.param_dict)
+        params_ast = {name: to_ast(param)
+                      for name, param in instance.param_dict.items()}
         ast_sections = {}
+        ast_funcs = self._ast_funcs
         for sec_id, func in self.setup.items():
-            if func == self.func:
-                # special here because we don't want to look *inside* the
-                # code of self.func, and wrappers wouldn't use explicit
-                # params -- plus, can override this func in a subclass
-                sec_ast = self._default_setup_ast(param_dict,
-                                                  assign=instance.name)
-            elif func == self._main_call:
-                sec_ast = ...  # general case for instantiators
+            if func == self._main_call:
+                sec_ast = ast_funcs[sec_id](params_ast, assign=instance.name)
             else:
-                sec_ast, params = ...  # parse in other cases
+                sec_ast = ast_funcs[sec_id](params_ast)
             ast_sections[sec_id] = sec_ast
 
         return ast_sections

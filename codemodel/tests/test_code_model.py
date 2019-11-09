@@ -11,6 +11,7 @@ import collections
 
 
 class SectionsExample(object):
+    import ast
     # in the examples, we'll use the input num=3 and the variable name
     # my_counter for the result of the main call
     prepare_data_code = """
@@ -18,6 +19,9 @@ class SectionsExample(object):
     for i in range(1, 3 + 1):
         data.extend([i] * i)
     """
+    prepare_data_ast = ast.parse(
+        "\n".join(line[4:] for line in prepare_data_code.splitlines())
+    ).body
     @staticmethod
     def prepare_data(num):
         data = []
@@ -34,6 +38,24 @@ class SectionsExample(object):
     def make_counter(data):
         import collections
         return collections.Counter(data)
+
+    @staticmethod
+    def pure_ast_make_counter(**params_dict, assign):
+        import ast
+        return [
+            ast.Import(names=[alias(name='collections', asname=None)]),
+            ast.Assign(
+                targets=[ast.Name(id=assign, ctx=ast.Store())],
+                value=ast.Call(
+                    func=ast.Attribute(
+                        value=ast.Name(id='collections', ctx=ast.Load()),
+                        attr='Counter'
+                    ),
+                    args=[params_dict['data']],
+                    keywords=[]
+                )
+            )
+        ]
 
     after_making_code = """
     my_counter.update([3])
@@ -157,8 +179,73 @@ class TestCodeModel(object):
         model = CodeModel("exists", [self.exists_param], pkg, setup)
         assert model.setup == expected
 
-    def test_set_ast_sections(self):
-        pytest.skip()
+    def test_set_ast_section_package_default(self):
+        # version where we use the packages func
+        model = self.models['packaged']
+        assert model._ast_funcs == {50: model._default_setup_ast}
+
+    @pytest.mark.parametrize("setup, ast_sections, label", [
+        pytest.param(exists_setup, None, "exists_setup", 
+                     id="setup-func"),
+        pytest.param(
+            {10: SectionsExample.prepare_data,
+             50: SectionsExample.make_counter,
+             70: SectionsExample.after_making},
+            None, "sections",
+            id="setup-dict"
+        ),
+        pytest.param(
+            {10: SectionsExample.prepare_data,
+             50: SectionsExample.make_counter,
+             70: SectionsExample.after_making},
+            None,  #TODO
+            "all_ast",
+            id="all-ast"
+        ),
+        pytest.param(
+            {10: SectionsExample.prepare_data,
+             50: SectionsExample.make_counter,
+             70: SectionsExample.after_making},
+            None,  #TODO
+            "partial_ast",
+            id="partial-ast"
+        ),
+    ])
+    def test_set_ast_sections(self, setup, ast_sections, label):
+        sections_param = ...
+        name, param = {
+            'exists_setup': ("exists_setup", self.exists_param),
+            'sections': ("sections_example", sections_param),
+            'all_ast': ("sections_example", sections_param),
+            'partial_ast': ("sections_example", sections_param)
+        }[label]
+        model = CodeModel(name, [param], None, setup, ast_sections)
+
+        instantiation_func = codemodel.asttools.instantiation_func_to_ast
+        dict_func = codemodel.asttools.return_dict_func_to_ast_body
+
+        try:
+            expected = {
+                'exists_setup': {50: functools.partial(instantiation_func,
+                                                       func=exists_setup)},
+                'sections': {
+                    10: functools.partial(dict_func,
+                                          func=SectionsExample.prepare_data),
+                    50: functools.partial(instantiation_func,
+                                          func=SectionsExample.make_counter),
+                    70: functools.partial(dict_func,
+                                          func=SectionsExample.after_making)
+                },
+            }[label]
+        except KeyError:
+            pytest.skip()
+
+        assert set(model._ast_funcs.keys()) == set(expected.keys())
+        for key, expected_func in expected.items():
+            assert model._ast_funcs[key].func == expected_func.func
+            assert model._ast_funcs[key].args == expected_func.args
+            assert model._ast_funcs[key].keywords == expected_func.keywords
+
 
     @pytest.mark.parametrize("setup, expected", [
         (None, (None, None, None)),
@@ -183,7 +270,7 @@ class TestCodeModel(object):
     def test_instantiate(self):
         pytest.skip()
 
-    def test_ast_section(self):
+    def test_code_sections(self):
         pytest.skip()
 
 
