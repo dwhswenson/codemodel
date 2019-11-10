@@ -165,6 +165,11 @@ class ReplaceName(ast.NodeTransformer):
             return ast.copy_location(new_node, node)
         return self.generic_visit(node)
 
+def replace_ast_names(ast_tree, ast_param_dict):
+    replacer = ReplaceName(ast_param_dict)
+    ast_tree = replacer.visit(ast_tree)
+    return ast_tree
+
 def return_dict_func_to_ast_body(func, param_ast_dict):
     """
     Get the body of a return dict function; return replaced with assignment.
@@ -202,8 +207,9 @@ def return_dict_func_to_ast_body(func, param_ast_dict):
     body.extend(assignments)
     body_tree = ast.Module(body=body)
 
-    replace = ReplaceName(param_ast_dict)
-    tree = replace.visit(tree)
+    body_tree = replace_ast_names(body_tree, param_ast_dict)
+    # replace = ReplaceName(param_ast_dict)
+    # body_tree = replace.visit(body_tree)
 
     return body_tree
 
@@ -240,9 +246,10 @@ def instantiation_func_to_ast(func, param_ast_dict, assign=None):
     body_tree = ast.Module(body=tree.body[0].body)
     if assign is None:
         assign = "_"
+    # replace_names = ReplaceName(param_ast_dict)
+    # body_tree = replace_names.visit(body_tree)
+    body_tree = replace_ast_names(body_tree, param_ast_dict)
     replace_returns = ReplaceReturnWithAssign(assign)
-    replace_names = ReplaceName(param_ast_dict)
-    body_tree = replace_names.visit(body_tree)
     body_tree = replace_returns.visit(body_tree)
     return body_tree
 

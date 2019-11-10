@@ -19,9 +19,14 @@ class SectionsExample(object):
     for i in range(1, 3 + 1):
         data.extend([i] * i)
     """
-    prepare_data_ast = ast.parse(
-        "\n".join(line[4:] for line in prepare_data_code.splitlines())
-    ).body
+    prepare_data_ast = UserAST(
+        ast=ast.parse(
+            "\n".join(line[4:] for line in prepare_data_code.splitlines())
+        ).body,
+        inputs=['num'],
+        outputs=['data']
+    )
+
     @staticmethod
     def prepare_data(num):
         data = []
@@ -39,23 +44,25 @@ class SectionsExample(object):
         import collections
         return collections.Counter(data)
 
-    @staticmethod
-    def pure_ast_make_counter(**params_dict, assign):
-        import ast
-        return [
-            ast.Import(names=[alias(name='collections', asname=None)]),
+    make_counter_ast = UserAST(
+        ast=[
+            ast.Import(names=[ast.alias(name='collections', asname=None)]),
             ast.Assign(
-                targets=[ast.Name(id=assign, ctx=ast.Store())],
+                targets=[ast.Name(id='counter', ctx=ast.Store())],
                 value=ast.Call(
                     func=ast.Attribute(
                         value=ast.Name(id='collections', ctx=ast.Load()),
                         attr='Counter'
                     ),
-                    args=[params_dict['data']],
+                    args=[ast.Name(id='data', ctx=ast.Load())],
                     keywords=[]
                 )
             )
-        ]
+        ],
+        inputs=['data'],
+        outputs=['counter']
+    )
+
 
     after_making_code = """
     my_counter.update([3])
@@ -68,14 +75,15 @@ class SectionsExample(object):
     ast_after_making_code = """
     my_counter.update([4])
     """
-    @staticmethod
-    def pure_ast_after_making(**params_dict):
-        import ast
-        return [ast.Call(
+    after_making_ast = UserAST(
+        ast=[ast.Call(
             func=ast.Attribute(value=ast.Name(id='counter', ctx=ast.Load()),
                                attr='update'),
-            args=[ast.List(elts=[ast.Num(4)])]  # gasp! 4 not 3? danger!
-        )]
+            args=[ast.List(elts=[ast.Num(4)])]  # diff val to verify it
+        )],
+        inputs=['counter'],
+        outputs=[]
+    )
 
 
 def exists_setup(afile):
@@ -185,7 +193,7 @@ class TestCodeModel(object):
         assert model._ast_funcs == {50: model._default_setup_ast}
 
     @pytest.mark.parametrize("setup, ast_sections, label", [
-        pytest.param(exists_setup, None, "exists_setup", 
+        pytest.param(exists_setup, None, "exists_setup",
                      id="setup-func"),
         pytest.param(
             {10: SectionsExample.prepare_data,
@@ -206,13 +214,13 @@ class TestCodeModel(object):
             {10: SectionsExample.prepare_data,
              50: SectionsExample.make_counter,
              70: SectionsExample.after_making},
-            None,  #TODO
+            {70: SectionsExample.after_making_ast},
             "partial_ast",
             id="partial-ast"
         ),
     ])
     def test_set_ast_sections(self, setup, ast_sections, label):
-        sections_param = ...
+        sections_param = ...  #TODO
         name, param = {
             'exists_setup': ("exists_setup", self.exists_param),
             'sections': ("sections_example", sections_param),

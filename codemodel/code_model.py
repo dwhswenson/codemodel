@@ -1,8 +1,15 @@
+import ast
 import functools
 import importlib
+import typing
 
 import codemodel
 from codemodel import imports, asttools
+
+class UserAST(typing.NamedTuple):
+    ast: typing.List[ast.AST]
+    inputs: typing.List[str]
+    outputs: typing.List[str]
 
 class CodeModel(object):
     """Model for a callable.
@@ -22,6 +29,10 @@ class CodeModel(object):
         the function(s) used to instantiate this object; if None (default)
         is just uses the callable that this represents. See docs for more
         details.
+    ast_sections : dict
+        keys are section numbers as in ``setup``, values are a 2-tuple of
+        the AST for the code and the list of variables names to export to
+        the script namespace.
     """
     def __init__(self, name, parameters, package=None, setup=None,
                  ast_sections=None):
@@ -77,6 +88,7 @@ class CodeModel(object):
                 )
 
             ast_sections[sec_id] = sec_ast
+
         return ast_sections
 
 
