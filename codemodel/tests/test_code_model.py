@@ -287,58 +287,8 @@ class TestCodeModel(object):
         with pytest.raises(ValueError):
             CodeModel._call_func_order(setup)
 
-    def test_instantiate(self):
-        pytest.skip()
+    # instantiate and code_sections are testing in TestInstance
 
-    def test_code_sections(self):
-        pytest.skip()
-
-
-class _UnshadowPropertyExample(object):
-    def __init__(self):
-        self.has_run = False
-
-    @property
-    def bad_property(self):
-        raise RuntimeError("Bad!")
-
-    @property
-    def self_healing(self):
-        if not self.has_run:
-            self.has_run = True
-            raise RuntimeError("Bad once")
-        else:
-            return "healed!"
-
-    @property
-    def good(self):
-        return "fine"
-
-    def other(self):
-        pass
-
-@pytest.mark.parametrize("prop", ['bad_property'])
-def test_unshadow_property_error_gives_error(prop):
-    obj = _UnshadowPropertyExample()
-    ErrorType = {'bad_property': RuntimeError}[prop]
-    with pytest.raises(ErrorType):
-        _unshadow_property_error(obj, prop)
-
-@pytest.mark.parametrize("prop", ['good', 'other', 'does_not_exist'])
-def test_unshadow_property_error_gives_result(prop):
-    obj = _UnshadowPropertyExample()
-    result = {'good': "fine",
-              'other': None,
-              'does_not_exist': None}[prop]
-    assert _unshadow_property_error(obj, prop) == result
-
-def test_unshadow_property_error_self_healing():
-    obj = _UnshadowPropertyExample()
-    prop = 'self_healing'
-    result = 'healed!'
-    with pytest.raises(RuntimeError):
-        _unshadow_property_error(obj, prop)
-    assert _unshadow_property_error(obj, prop) == result
 
 class TestInstance(object):
     def setup(self):
