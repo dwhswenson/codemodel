@@ -236,7 +236,7 @@ def return_dict_to_assign(func_tree):
     key_names = [key.s for key in node.value.keys]
 
     assignments = [
-        ast.Assign(targets=[ast.Name(key, ctx=ast.Store())], value=value)
+        ast.Assign(targets=[ast.Name(id=key, ctx=ast.Store())], value=value)
         for key, value in zip(key_names, node.value.values)
         if not (isinstance(value, ast.Name) and value.id == key)
     ]
