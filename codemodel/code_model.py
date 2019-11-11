@@ -80,11 +80,13 @@ class CodeModel(object):
                 # code of self.func, and wrappers wouldn't use explicit
                 # params -- plus, can override this func in a subclass
                 sec_ast = self._default_setup_ast
+                outputs = None
             elif func == self._main_call:
                 sec_ast = functools.partial(
                     asttools.instantiation_func_to_ast,
                     func=func
                 )
+                outputs = None
             else:
                 sec_ast = functools.partial(
                     asttools.return_dict_func_to_ast_body,
@@ -236,6 +238,7 @@ class Instance(object):
     """
     def __init__(self, name, code_model, param_dict):
         self.name = name
+        self._code_name = None
         self.code_model = code_model
         self.param_dict = param_dict
         self._instance = None
@@ -261,6 +264,17 @@ class Instance(object):
         if self._instance is None:
             self._instance = self.code_model.instantiate(self)
         return self._instance
+
+    @property
+    def code_name(self):
+        if self._code_name:
+            return self._code_name
+        else:
+            return self.name
+
+    @code_name.setter
+    def code_name(self, value):
+        self._code_name = value
 
     @property
     def code_sections(self):
