@@ -3,6 +3,8 @@ import functools
 import importlib
 import typing
 
+import astor
+
 import codemodel
 from codemodel import imports, asttools
 
@@ -184,8 +186,9 @@ class CodeModel(object):
         return obj
 
     def _default_setup_ast(self, param_dict, assign=None):
-        return asttools.default_ast(self.func, param_dict,
-                                    prefix=self.prefix, assign=assign)
+        return asttools.create_call_ast(self.func, param_dict,
+                                        assign=assign,
+                                        prefix=self.package.implicit_prefix)
 
     def instance_ast_sections(self, instance):
         # TODO: add the to_ast function
@@ -206,27 +209,17 @@ class CodeModel(object):
     def code_sections(self, instance):
         """ """
         return {k: astor.to_source(v) for
-                k, v in self.ast_sections(instance)}
+                k, v in self.instance_ast_sections(instance).items()}
 
 
-def _unshadow_property_error(self, item):
-    # I know I'd seen this problem before: the OPS DynamicsEngine had same
-    dct = self.__class__.__dict__
-    if item in dct:
-        p = dct[item]
-        if isinstance(p, property):
-            try:
-                result = p.fget(self)
-            except:
-                raise
-            else:
-                return result  # miraculously fixed
-                # alternately, complain
-                # raise AttributeError(
-                    # "Unknown problem occurred in property"
-                    # + str(p.fget.__name__) + ": Second attempt returned"
-                    # + str(result)
-                # )
+def to_ast(obj):
+    if isinstance(obj, Instance):
+        node = ast.Name(id=obj.code_name, ctx=ast.Load())
+    else:
+        # TODO: this can probably be improved
+        node = ast.parse(repr(obj), mode='eval').body
+    return node
+
 
 class Instance(object):
     """Representation of an instance (noun-like object) in the source.
@@ -242,21 +235,6 @@ class Instance(object):
         self.code_model = code_model
         self.param_dict = param_dict
         self._instance = None
-
-    def __getattr__(self, item):
-        # NOTE: getattr in a property can shadow errors
-        bad_property_check = _unshadow_property_error(self, item)
-        if bad_property_check is not None:
-            # only happens if self-healing
-            return bad_property_check
-
-        try:
-            return self.param_dict[item]
-        except KeyError:
-            raise AttributeError('{cls} has no attribute {item}'.format(
-                cls=str(self.__class__),
-                item=str(item)
-            ))
 
     @property
     def instance(self):
@@ -281,5 +259,5 @@ class Instance(object):
         """code for this instance, as a sections dictionary"""
         return self.code_model.code_sections(self)
 
-    def __str__(self):
-        return self.name
+    def __str__(self):  # no-cover
+        return self.code_name

@@ -1,3 +1,4 @@
+import re
 import pytest
 from unittest import mock
 
@@ -5,7 +6,6 @@ import inspect
 
 import codemodel
 from codemodel.code_model import *
-from codemodel.code_model import _unshadow_property_error
 
 import collections
 
@@ -289,16 +289,64 @@ class TestCodeModel(object):
 
     # instantiate and code_sections are testing in TestInstance
 
-
 class TestInstance(object):
     def setup(self):
-        pass
+        import os.path
+        exists = os.path.exists
 
-    def test_getattr(self):
-        pytest.skip()
+        # TODO: try several more complicated code models
+        self.models = {
+            'os.path.exists': CodeModel(
+                name="exists",
+                parameters=[codemodel.Parameter(
+                    parameter=inspect.signature(exists).parameters['path'],
+                    param_type="Unknown"
+                )],
+                package=mock.Mock(import_statement="from os import path",
+                                  implicit_prefix="path",
+                                  model_types=['CodeModel'])
+            ),
+        }
+        self.param_dict = {
+            'os.path.exists': {'path': __file__},
+        }
+        self.expected = {
+            'os.path.exists': True,
+        }
+        self.expected_code = {
+            'os.path.exists': {
+                50: (r"path_exists = path.exists\(path\=\s*'"
+                     + str(__file__) + r"'\s*\)")
+            },
+        }
+        self.instances = {
+            'os.path.exists': Instance(
+                name='path_exists',
+                code_model=self.models['os.path.exists'],
+                param_dict=self.param_dict['os.path.exists']
+            ),
+        }
 
     def test_instance(self):
-        pytest.skip()
+        model_name = 'os.path.exists'
+        model = self.models[model_name]
+        instance_obj = self.instances[model_name]
+        instance = instance_obj.instance
+        assert instance == self.expected[model_name]
+        assert instance is instance_obj.instance  # idempotency
+
+    def test_code_name(self):
+        model_name = 'os.path.exists'
+        instance_obj = self.instances[model_name]
+        old_name = instance_obj.name
+        assert instance_obj.code_name == instance_obj.name
+        instance_obj.code_name = "foo"
+        assert instance_obj.code_name != instance_obj.name
+        assert instance_obj.name == old_name
 
     def test_code_sections(self):
-        pytest.skip()
+        model_name = 'os.path.exists'
+        instance_obj = self.instances[model_name]
+        code_sections = instance_obj.code_sections
+        for sec_id, code in code_sections.items():
+            assert re.match(self.expected_code[model_name][sec_id], code)
