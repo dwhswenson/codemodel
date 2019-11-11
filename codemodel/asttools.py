@@ -2,6 +2,8 @@ import ast
 import collections
 import inspect
 
+### PARAMETER WRANGLING ##################################################
+
 def organize_parameter_names(func):
     """Organize the parameter names by how they will be displayed.
 
@@ -89,6 +91,7 @@ def get_args_kwargs(func, param_dict):
     inspect.signature(func).bind(*args, **kwargs)  # just to test it
     return args, kwargs
 
+### GENERIC STUFF ########################################################
 
 def deindented_source(src):
     """De-indent source if all lines indented.
@@ -125,6 +128,33 @@ def deindented_source(src):
     src = "\n".join(lines)
     return src
 
+def _tree_from_func_or_tree(func_or_tree):
+    """Used internally to ensure AST format for validators"""
+    if isinstance(func_or_tree, ast.AST):
+        return func_or_tree
+    elif callable(func_or_tree):
+        return func_to_ast(func_or_tree)
+
+def func_to_ast(func):
+    src = inspect.getsource(func)
+    src = deindented_source(src)
+    func_tree = ast.parse(src)
+    return func_tree
+
+### AST VALIDATORS #######################################################
+
+def count_returns(tree):
+    class ReturnCounter(ast.NodeVisitor):
+        def __init__(self):
+            super().__init__()
+            self.count = 0
+
+        def visitReturn(self, node):
+            self.count += 1
+            self.generic_visit(node)
+
+    counter = ReturnCounter()
+    return counter.count
 
 def is_return_dict_function(func):
     """Check whether a function returns a dictionary
@@ -150,25 +180,94 @@ def is_return_dict_function(func):
 
     return False
 
-class ReplaceName(ast.NodeTransformer):
-    def __init__(self, param_ast_dict):
-        super().__init__()
-        self.param_ast_dict = param_ast_dict
-        #self.node_replacers = {k: node_replacer(v)
-        #                       for k, v in param_ast_dict.items()}
-
-    def visit_Name(self, node):
-        if node.id in self.param_ast_dict and isinstance(node.ctx, ast.Load):
-            value = self.param_ast_dict[node.id]
-            new_node = self.param_ast_dict[node.id]
-            # self.generic_visit(new_node)   # maybe?
-            return ast.copy_location(new_node, node)
-        return self.generic_visit(node)
+### AST REWRITERS ########################################################
 
 def replace_ast_names(ast_tree, ast_param_dict):
+    """Replace names in a tree with nodes in a dictionary.
+
+    Parameters
+    ----------
+    ast_tree : ast.AST
+        tree to replace nodes in
+    ast_param_dict : Dict[str, ast.AST]
+        parameter dictionary mapping parameter name (name ID in the tree) to
+        the AST node to replace it with
+
+    Returns
+    -------
+    ast.AST :
+        tree with replaced nodes
+    """
+    class ReplaceName(ast.NodeTransformer):
+        def __init__(self, param_ast_dict):
+            super().__init__()
+            self.param_ast_dict = param_ast_dict
+            #self.node_replacers = {k: node_replacer(v)
+            #                       for k, v in param_ast_dict.items()}
+
+        def _is_load_paramdict_node(self, node):
+            return (node.id in self.param_ast_dict
+                    and isinstance(node.ctx, ast.Load))
+
+        def visit_Name(self, node):
+            if self._is_load_paramdict_node(node):
+                value = self.param_ast_dict[node.id]
+                new_node = self.param_ast_dict[node.id]
+                # self.generic_visit(new_node)   # maybe?
+                return ast.copy_location(new_node, node)
+            return self.generic_visit(node)
+
     replacer = ReplaceName(ast_param_dict)
     ast_tree = replacer.visit(ast_tree)
     return ast_tree
+
+def return_dict_to_assign(func_tree):
+    """Convert the dict in a dictionary-returning function to assignments.
+    """
+    # TODO: func_tree should be validated before this
+    body = []
+    for node in func_tree.body[0].body:
+        if isinstance(node, ast.Return):
+            break
+        body.append(node)
+
+    dict_node = node.value
+
+    key_names = [key.s for key in node.value.keys]
+
+    assignments = [
+        ast.Assign(targets=[ast.Name(key, ctx=ast.Store())], value=value)
+        for key, value in zip(key_names, node.value.values)
+        if not (isinstance(value, ast.Name) and value.id == key)
+    ]
+    body.extend(assignments)
+    body_tree = ast.Module(body=body)
+    return body_tree
+
+def return_to_assign(func_tree, assign=None):
+    class ReplaceReturnWithAssign(ast.NodeTransformer):
+        def __init__(self, name):
+            super().__init__()
+            self.name = name
+
+        def visit_Return(self, node):
+            new_node = ast.Assign(
+                targets=[ast.Name(id=self.name, ctx=ast.Store())],
+                value=node.value
+            )
+            return ast.copy_location(new_node, node)
+
+    # TODO validate func_tree (what to check?)
+    # * `assign` should not be used as a name ID
+    # * tree should have explicit return (no implicit return None)
+    body_tree = ast.Module(body=func_tree.body[0].body)
+    if assign is None:
+        assign = "_"
+    replace_returns = ReplaceReturnWithAssign(assign)
+    body_tree = replace_returns.visit(body_tree)
+    return body_tree
+
+### SPECIFIC COMBOS ######################################################
 
 def return_dict_func_to_ast_body(func, param_ast_dict):
     """
@@ -186,45 +285,10 @@ def return_dict_func_to_ast_body(func, param_ast_dict):
         nodes in the body of the function, ready to be made part of a longer
         function
     """
-    tree = ast.parse(deindented_source(inspect.getsource(func)))
-
-    body = []
-    for node in tree.body[0].body:
-        if isinstance(node, ast.Return):
-            break
-        body.append(node)
-
-    dict_node = node.value
-    #validate(func, tree, dict_node)
-
-    key_names = [key.s for key in node.value.keys]
-
-    assignments = [
-        ast.Assign(targets=[ast.Name(key, ctx=ast.Store())], value=value)
-        for key, value in zip(key_names, node.value.values)
-        if not (isinstance(value, ast.Name) and value.id == key)
-    ]
-    body.extend(assignments)
-    body_tree = ast.Module(body=body)
-
+    tree = func_to_ast(func)
+    body_tree = return_dict_to_assign(tree)
     body_tree = replace_ast_names(body_tree, param_ast_dict)
-    # replace = ReplaceName(param_ast_dict)
-    # body_tree = replace.visit(body_tree)
-
     return body_tree
-
-
-class ReplaceReturnWithAssign(ast.NodeTransformer):
-    def __init__(self, name):
-        super().__init__()
-        self.name = name
-
-    def visit_Return(self, node):
-        new_node = ast.Assign(
-            targets=[ast.Name(id=self.name, ctx=ast.Store())],
-            value=node.value
-        )
-        return ast.copy_location(new_node, node)
 
 def instantiation_func_to_ast(func, param_ast_dict, assign=None):
     """Get the body of any functions, converting the returns to assignment.
@@ -242,16 +306,11 @@ def instantiation_func_to_ast(func, param_ast_dict, assign=None):
     ast.AST :
         node that represents this statement
     """
-    tree = ast.parse(deindented_source(inspect.getsource(func)))
-    body_tree = ast.Module(body=tree.body[0].body)
-    if assign is None:
-        assign = "_"
-    # replace_names = ReplaceName(param_ast_dict)
-    # body_tree = replace_names.visit(body_tree)
+    tree = func_to_ast(func)
+    body_tree = return_to_assign(tree, assign)
     body_tree = replace_ast_names(body_tree, param_ast_dict)
-    replace_returns = ReplaceReturnWithAssign(assign)
-    body_tree = replace_returns.visit(body_tree)
     return body_tree
+
 
 def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
     """Creates a call of the function from scratch.
@@ -287,7 +346,7 @@ def create_call_ast(func, param_ast_dict, assign=None, prefix=None):
         funcname = ast.Attribute(value=ast.Name(id=prefix, ctx=ast.Load()),
                                  attr=func.__name__)
     else:
-        funcname = ast.Name(id=func.__name__)
+        funcname = ast.Name(id=func.__name__, ctx=ast.Load())
 
     func_node = ast.Call(func=funcname, args=ast_args, keywords=ast_kwargs)
 

@@ -65,6 +65,10 @@ class CodeModel(object):
 
     def _set_ast_sections(self, ast_sections, setup):
         """create partials for AST writing"""
+        # TODO: may change some of this significantly, in order to also get
+        # output information (which allows significant validation at
+        # initialization for setup-function based approaches, and may be
+        # required for sanity in AST-based approaches).
         ast_sections = dict(ast_sections)  # copy
         missing = [idx for idx in setup if idx not in ast_sections]
         for sec_id in missing:
