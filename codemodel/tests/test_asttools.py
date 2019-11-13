@@ -90,14 +90,14 @@ class ValidateFuncHolder(object):
         bar = 1
         return baz(foo, bar)
 
-@pytest.mark.parametrize("func,expected", [
-    (ValidateFuncHolder.dict_return_global, True),
-    (ValidateFuncHolder.valid, True),
-    (ValidateFuncHolder.no_return, False),
-    (ValidateFuncHolder.return_non_dict, False)
-])
-def test_is_return_dict_function(func, expected):
-    assert is_return_dict_function(func) == expected
+# @pytest.mark.parametrize("func,expected", [
+    # (ValidateFuncHolder.dict_return_global, True),
+    # (ValidateFuncHolder.valid, True),
+    # (ValidateFuncHolder.no_return, False),
+    # (ValidateFuncHolder.return_non_dict, False)
+# ])
+# def test_is_return_dict_function(func, expected):
+    # assert is_return_dict_function(func) == expected
 
 @pytest.mark.parametrize("func, params, expected_code", [
     (
