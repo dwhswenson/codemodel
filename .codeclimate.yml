@@ -29,6 +29,8 @@ plugins:
 
     fixme:
         enabled: true
+        issue_override:
+            severity: info
         config:
             strings:
                 - FIXME

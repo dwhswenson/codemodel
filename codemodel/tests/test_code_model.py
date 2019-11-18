@@ -20,7 +20,7 @@ class SectionsExample(object):
         data.extend([i] * i)
     """
     prepare_data_ast = UserAST(
-        ast=ast.parse(
+        ast_maker=ast.parse(
             "\n".join(line[4:] for line in prepare_data_code.splitlines())
         ).body,
         inputs=['num'],
@@ -45,7 +45,7 @@ class SectionsExample(object):
         return collections.Counter(data)
 
     make_counter_ast = UserAST(
-        ast=[
+        ast_maker=[
             ast.Import(names=[ast.alias(name='collections', asname=None)]),
             ast.Assign(
                 targets=[ast.Name(id='counter', ctx=ast.Store())],
@@ -68,20 +68,20 @@ class SectionsExample(object):
     my_counter.update([3])
     """
     @staticmethod
-    def after_making(counter):
-        counter.update([3])
+    def after_making(_instance):
+        _instance.update([3])
         return {}
 
     ast_after_making_code = """
     my_counter.update([4])
     """
     after_making_ast = UserAST(
-        ast=[ast.Call(
-            func=ast.Attribute(value=ast.Name(id='counter', ctx=ast.Load()),
+        ast_maker=[ast.Call(
+            func=ast.Attribute(value=ast.Name(id='_instance', ctx=ast.Load()),
                                attr='update'),
             args=[ast.List(elts=[ast.Num(4)])]  # diff val to verify it
         )],
-        inputs=['counter'],
+        inputs=['_instance'],
         outputs=[]
     )
 
@@ -171,20 +171,18 @@ class TestCodeModel(object):
         import os.path
         assert self.models['packaged'].func == os.path.exists
 
-    @pytest.mark.parametrize("pkg, setup, expected", [
-        (None, None, None),
-        (True, None, True),
-        (None, exists_setup, {50: exists_setup}),
-        (None, {50: exists_setup}, {50: exists_setup}),
-    ])
-    def test_set_setup(self, pkg, setup, expected):
-        if pkg:
-            pkg = self.packages['packaged']
-        if expected is True:
-            from os.path import exists
-            expected = {50: exists}
+    def test_set_setup_with_package(self):
+        import os.path
+        model = self.models['packaged']
+        assert model.setup == {50: os.path.exists}
 
-        model = CodeModel("exists", [self.exists_param], pkg, setup)
+    @pytest.mark.parametrize("setup, expected", [
+        (None, None),
+        (exists_setup, {50: exists_setup}),
+        ({50: exists_setup}, {50: exists_setup}),
+    ])
+    def test_set_setup(self, setup, expected):
+        model = CodeModel("exists", [self.exists_param], None, setup)
         assert model.setup == expected
 
     def test_set_ast_section_package_default(self):

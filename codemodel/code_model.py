@@ -9,7 +9,17 @@ import codemodel
 from codemodel import imports, asttools
 
 class UserAST(typing.NamedTuple):
-    ast: typing.List[ast.AST]
+    ast_maker: typing.Callable[[typing.Dict[str, ast.AST], str], ast.AST]
+    inputs: typing.List[str]
+    outputs: typing.List[str]
+
+
+class MainCallAST(typing.NamedTuple):
+    ast_maker: typing.Callable[[typing.Dict[str, ast.AST], str], ast.Module]
+    inputs: typing.List[str]
+
+class GenericFunctionAST(typing.NamedTuple):
+    ast_maker: typing.Callable[[typing.Dict[str, ast.AST]], ast.Module]
     inputs: typing.List[str]
     outputs: typing.List[str]
 
@@ -105,9 +115,12 @@ class CodeModel(object):
         if setup is None:
             return (None, None, None)
 
-        funcs = [func for (_, func) in sorted(list(setup.items()))]
-        non_dict_return = [f for f in funcs
-                           if not asttools.is_return_dict_function(f)]
+        funcs, trees = zip(*[(func, asttools.func_to_body_tree(func))
+                             for (_, func) in sorted(list(setup.items()))])
+        funcs, trees = list(funcs), list(trees)
+        non_dict_return = [f for (f, tree) in zip(funcs, trees)
+            if not asttools.is_return_dict_func(tree)
+        ]
         if len(non_dict_return) != 1:
             raise ValueError(("Unable to identify main call function. "
                               + "Found %d non-dict returning "

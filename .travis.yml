@@ -42,8 +42,7 @@ script:
   - py.test -vv --cov=codemodel --cov-report xml:cov.xml
 
 after_success:
-  - export COVERALLS_PARALLEL=true
-  - coveralls
+  - COVERALLS_PARALLEL=true coveralls
   #- python-codacy-coverage -r cov.xml
 
 jobs:
