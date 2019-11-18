@@ -36,4 +36,4 @@ def test_validate_return_dict_non_dict():
 def test_validate_return_dict_diff_keys():
     tree = ast.parse(inspect.getsource(return_dict_tester))
     with pytest.raises(ReturnDictError):
-        validate_return_dict(tree, 'return_dict_tester.inner')
+        validate_return_dict(tree, 'global.return_dict_tester.inner')

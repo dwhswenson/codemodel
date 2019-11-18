@@ -29,13 +29,13 @@ plugins:
 
     fixme:
         enabled: true
+        issue_override:
+            severity: info
         config:
             strings:
                 - FIXME
                 - BUG
                 - TODO
-        issue_override:
-            severity: info
 
     duplication:
         enabled: true
