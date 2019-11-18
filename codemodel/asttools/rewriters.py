@@ -47,32 +47,6 @@ def replace_ast_names(ast_tree, ast_param_dict):
     ast_tree = replacer.visit(ast_tree)
     return ast_tree
 
-
-# TODO: remove this function; replace with the better version working on the
-# tree
-def return_dict_to_assign(func_tree):
-    """Convert the dict in a dictionary-returning function to assignments.
-    """
-    # TODO: func_tree should be validated before this
-    body = []
-    for node in func_tree.body[0].body:
-        if isinstance(node, ast.Return):
-            break
-        body.append(node)
-
-    dict_node = node.value
-
-    key_names = [key.s for key in node.value.keys]
-
-    assignments = [
-        ast.Assign(targets=[ast.Name(id=key, ctx=ast.Store())], value=value)
-        for key, value in zip(key_names, node.value.values)
-        if not (isinstance(value, ast.Name) and value.id == key)
-    ]
-    body.extend(assignments)
-    body_tree = ast.Module(body=body)
-    return body_tree
-
 def return_to_assign(body_tree, assign=None):
     class ReplaceReturnWithAssign(ast.NodeTransformer):
         def __init__(self, name):
