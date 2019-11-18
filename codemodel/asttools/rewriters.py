@@ -48,6 +48,16 @@ def replace_ast_names(ast_tree, ast_param_dict):
     return ast_tree
 
 def return_to_assign(body_tree, assign=None):
+    """Convert a return at global (body-tree) scope to an assignment.
+
+    Parameters
+    ----------
+    body_tree : ast.Module
+        the body of the function to convert the return from
+    assign : Union[str, None]
+        the name to assign the return value to; if None (default) assign to
+        the meaningless _
+    """
     class ReplaceReturnWithAssign(ast.NodeTransformer):
         def __init__(self, name):
             super().__init__()
@@ -73,6 +83,20 @@ def return_to_assign(body_tree, assign=None):
 
 def global_return_dict_to_assign(body_tree):
     """Replace return of dict at global scope with assignment.
+
+    Converts the dict key to a name in the code, e.g., ``{'foo': bar}``
+    because the AST equivalent of ``foo = bar``. This is smart enough not
+    to create tautological assignments, such as ``foo = foo``.
+
+    Parameters
+    ----------
+    body_tree : ast.Module
+        AST representation of the body of the function.
+
+    Returns
+    -------
+    ast.Module :
+        AST representation with return dicts replaced by assignment
     """
     class FindGlobalReturns(ScopeLister):
         def visit_Return(self, node):
@@ -98,10 +122,12 @@ def global_return_dict_to_assign(body_tree):
             else:
                 return node
 
+    # check that we have a valid return dict
+    validate_return_dict(body_tree)
+
     finder = FindGlobalReturns()
     finder.visit(body_tree)
     nodes = finder.values['global']
-    # TODO: validate that all nodes give the same keys
     dict_nodes = [node for node in nodes
                   if isinstance(node.value, ast.Dict)]
     replacer = ReturnDictToAssign(dict_nodes)
