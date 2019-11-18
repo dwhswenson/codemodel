@@ -39,15 +39,6 @@ class ScopeTracker(ast.NodeVisitor):
         self._stack_visit(node, name='lambda')
 
 
-class ScopeCounter(ScopeTracker):
-    def __init__(self):
-        super().__init__()
-        self.count = collections.defaultdict(int)
-
-    def add_to_scope(self, count=1):
-        self.count[".".join(self.context)] += count
-
-
 class ScopeLister(ScopeTracker):
     def __init__(self):
         super().__init__()
@@ -55,6 +46,14 @@ class ScopeLister(ScopeTracker):
 
     def add_to_scope(self, obj):
         self.values[".".join(self.context)].append(obj)
+
+    def __getitem__(self, scope):
+        if scope not in self.values:
+            # TODO: change this up so we know which scopes exist and are
+            # empty vs which ones do not exist
+            raise CodeModelError("No values for scope: " + str(scope))
+        return self.values[scope]
+
 
 class ReturnFinder(ScopeLister):
     def visit_Return(self, node):
@@ -72,12 +71,12 @@ def count_returns(tree):
 def validate_return_dict(tree, scope='global'):
     finder = ReturnFinder()
     finder.visit(tree)
-    nodes = finder.values[scope]
+    nodes = finder[scope]
     keys = None
     for node in nodes:
         if not isinstance(node.value, ast.Dict):
             raise ReturnDictError("Non-dict return value found in function.")
-        local_keys = set(key.s for key in node.values.keys)
+        local_keys = set(key.s for key in node.value.keys)
         if keys is None:
             keys = local_keys
         if keys != local_keys:
@@ -87,7 +86,7 @@ def validate_return_dict(tree, scope='global'):
 def is_return_dict_func(tree, scope='global'):
     finder = ReturnFinder()
     finder.visit(tree)
-    nodes = finder.values[scope]
+    nodes = finder[scope]
     for node in nodes:
         if not isinstance(node.value, ast.Dict):
             return False

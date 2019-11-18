@@ -3,7 +3,7 @@ from .function_handling import (
     func_to_body_tree
 )
 from .validators import (
-    ScopeTracker, ScopeCounter, ScopeLister, count_returns,
+    ScopeTracker, ScopeLister, count_returns,
     find_required_inputs, validate_return_dict, is_return_dict_func
 )
 from .rewriters import (
