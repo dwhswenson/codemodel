@@ -279,6 +279,18 @@ def validate_return_dict(tree, scope='global'):
     * all return dictionaries must have the same keys
 
     This raises a ReturnDictError if any of those conditions are not true.
+
+    Parameters
+    ----------
+    tree : ast.AST
+        the tree to search
+    scope : str
+        the scrope to check as a return dict
+
+    Returns
+    -------
+    bool :
+        True if valid return dict func; raises error if not
     """
     finder = ReturnFinder()
     finder.visit(tree)
@@ -300,6 +312,18 @@ def validate_return_dict(tree, scope='global'):
 
 def is_return_dict_func(tree, scope='global'):
     """Check whether the tree is the body of a return dict functions.
+
+    Parameters
+    ----------
+    tree : ast.AST
+        the tree to search
+    scope : str
+        the scrope to check as a return dict
+
+    Returns
+    -------
+    bool :
+        whether this is a return dict
     """
     finder = ReturnFinder()
     finder.visit(tree)
