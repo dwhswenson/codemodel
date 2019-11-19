@@ -115,11 +115,21 @@ class Package(object):
         if model_types is None:
             model_types = ["CodeModel"] * len(callables)
 
+
         self.name = name
         self.import_statement = import_statement
         self.implicit_prefix = implicit_prefix
-        self.callables = callables
-        self.model_types = model_types
+        self.callables = []
+        self.model_types = []
+        for model, model_t in zip(callables, model_types):
+            self.register_codemodel(model, model_t)
+
+    def register_codemodel(self, code_model, model_type=None):
+        if model_type is None:
+            model_type = "CodeModel"
+
+        self.callables.append(code_model)
+        self.model_types.append(model_type)
 
     def __hash__(self):
         return hash((self.name, self.import_statement, self.implicit_prefix,
