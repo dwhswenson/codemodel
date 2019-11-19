@@ -5,7 +5,9 @@ import inspect
 import astor
 
 from codemodel.asttools.validators import *
-from .functions_ast import nested_scopes, return_dict_tester
+from .functions_ast import (
+    nested_scopes, return_dict_tester, undefined_names_tester
+)
 
 @pytest.mark.parametrize("func, counts", [
     (nested_scopes, {'global': 0,
@@ -45,3 +47,17 @@ def test_validate_return_dict_diff_keys():
     tree = ast.parse(inspect.getsource(return_dict_tester))
     with pytest.raises(ReturnDictError):
         validate_return_dict(tree, 'global.return_dict_tester.inner')
+
+def test_find_undefined_names():
+    tree = ast.parse(inspect.getsource(undefined_names_tester))
+    assert find_undefined_names(tree) == ['blue']
+
+def test_AssignmentsTracker():
+    tree = ast.parse(inspect.getsource(undefined_names_tester))
+    tracker = AssignmentsTracker()
+    tracker.visit(tree)
+    assert tracker.assignments == {
+        'global': set([]),
+        'global.undefined_names_tester': {'alpha', 'beta', 'a', 'b'},
+        'global.undefined_names_tester.bar': {'baz'}
+    }
