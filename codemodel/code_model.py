@@ -53,8 +53,12 @@ class CodeModel(object):
         self.package = package
 
         self.setup = self._set_setup(setup, package)
-        self._pre_call, self._main_call, self._post_call = \
-                self._call_func_order(self.setup)
+        if self.package and self.setup == {50: self.func}:
+            self._pre_call, self._main_call, self._post_call = \
+                    [], self.func, []
+        else:
+            self._pre_call, self._main_call, self._post_call = \
+                    self._call_func_order(self.setup)
 
         if ast_sections is None:
             ast_sections = {}
@@ -109,12 +113,10 @@ class CodeModel(object):
 
         return ast_sections
 
-    def _call_func_order(self, setup):
+    @staticmethod
+    def _call_func_order(setup):
         if setup is None:
             return (None, None, None)
-
-        if setup == {50: self.func}:
-            return ([], self.func, [])
 
         funcs, trees = zip(*[(func, asttools.func_to_body_tree(func))
                              for (_, func) in sorted(list(setup.items()))])
