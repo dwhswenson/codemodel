@@ -34,17 +34,59 @@ def default_type_desc(func):
 
 def codemodel_from_callable(func, type_desc=default_type_desc,
                             package=None):
+    """Create CodeModel from a callable function
+
+    Parameters
+    ----------
+    func : Callable[[Any], Any]
+        function to create the model of
+    type_desc : Callable[[Callable], Tuple[List[str], List[str]]]
+        function to extract type and description for each parameter of its
+        input callable. See :func:`.default_type_desc`.
+    package : Union[:class:`.Package`, None]
+        package to register this model with
+
+    Returns
+    -------
+    :class:`.CodeModel` :
+        model for this method; note that if ``package`` is given, this has
+        the side-effect of registering the model with the package
+    """
     inspect_params = inspect.signature(func).parameters.values()
     name = func.__name__
-    call, desc = type_desc(func)
+    param_type, desc = type_desc(func)
     parameters = [
-        codemodel.Parameter(p, param_type, desc)
-        for p, param_type, desc in zip(inspect_params, call, desc)
+        codemodel.Parameter(p, p_type, desc)
+        for p, p_type, desc in zip(inspect_params, param_type, desc)
     ]
-    return codemodel.CodeModel(name, parameters, package=package)
+    model = codemodel.CodeModel(name, parameters, package=package)
+    if package:
+        package.register_codemodel(model)
+    return model
 
 
 def package_from_import(import_statement):
+    """Create (empty) package from an import statement.
+
+    This determines the name and prefix of the package based on the import
+    statement, assuming that the name should be the full import name, and
+    the prefix is the import alias used. For example, ``import os`` has name
+    and prefix ``os``, while ``from os import path as foo`` has name
+    ``os.path`` and prefix ``foo``.
+
+    The resulting package is "empty" in the sense that it has no callables
+    associated with it. Callables can be registered after the fact.
+
+    Parameters
+    ----------
+    import_statement : str
+        a valid Python import statement
+
+    Returns
+    -------
+    :class:`.Pacakge` :
+        an empty package to contain callables based on this import
+    """
     imports = codemodel.asttools.import_names(import_statement)
     assert len(imports) == 1
     implicit_prefix, name = list(imports.items())[0]
@@ -59,7 +101,7 @@ def make_package(import_statement, callable_names,
     module = importlib.import_module(package.name)
     for func_name in callable_names:
         func = getattr(module, func_name)
+        # the following also registers the model with the package
         model = codemodel_from_callable(func, type_desc=type_desc,
                                         package=package)
-        package.register_codemodel(model)
     return package

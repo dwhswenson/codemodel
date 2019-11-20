@@ -1,11 +1,15 @@
 import pytest
+from unittest import mock
 import collections
+import inspect
 
 from codemodel.generate_json import *
+import codemodel
 
 import os   # used in testing
 
 PackageInfo = collections.namedtuple("PackageInfo", "name prefix")
+ModelInfo = collections.namedtuple("ModelInfo", "name parameters")
 
 @pytest.mark.parametrize("func, n_params", [(os.path.exists, 1),
                                             (os.path.samefile, 2),
@@ -15,24 +19,49 @@ def test_default_type_desc(func, n_params):
     assert types == tuple(["Unknown"] * n_params)
     assert descs == tuple([None] * n_params)
 
-def test_codemodel_from_callable():
-    pytest.skip()
+@pytest.mark.parametrize("func, model_info", [
+    (os.getcwd, ("getcwd", [])),
+    (os.path.exists, ("exists", [
+        codemodel.Parameter(
+            parameter=inspect.Parameter(
+                name="path",
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            ),
+            param_type="Unknown"
+        )
+    ])),
+])
+def test_codemodel_from_callable(func, model_info):
+    expected = ModelInfo(*model_info)
+    model = codemodel_from_callable(func)
+    assert model.name == expected.name
+    for param, exp_param in zip(model.parameters, expected.parameters):
+        assert param == exp_param
+
+
+def test_codemodel_from_callable_registers():
+    package = mock.Mock()
+    package.import_statement = "import os.path"
+    package.implicit_prefix = "os.path"
+    model = codemodel_from_callable(os.path.exists, package=package)
+    assert model.name == "exists"
+    package.register_codemodel.assert_called_once()
+
 
 @pytest.mark.parametrize("import_statement, package_info", [
     ("import os", ("os", "os")),
-    # ("import os.path", ("os.path", "os.path")),
-    # ("from os import path", ("os.path", "path")),
-    # ("import os.path as ospath", (,)),
-    # ("from os import path as ospath", (,))
+    ("import os.path", ("os.path", "os.path")),
+    ("from os import path", ("os.path", "path")),
+    ("import os.path as ospath", ("os.path", "ospath")),
+    ("from os import path as ospath", ("os.path", "ospath"))
 ])
 def test_package_from_import(import_statement, package_info):
     expected = PackageInfo(*package_info)
     package = package_from_import(import_statement)
     assert package.import_statement == import_statement
-    assert package.implicit_prefix == expected.prefic
+    assert package.implicit_prefix == expected.prefix
     assert package.name == expected.name
     assert package.callables == []
-    pytest.skip()
 
 def test_make_package():
     pytest.skip()
