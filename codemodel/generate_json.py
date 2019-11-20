@@ -4,6 +4,26 @@ import importlib
 
 
 def default_type_desc(func):
+    """Default tool to extract type and description.
+
+    Type is always "Unknown", description is always None. Use a more
+    intelligent function than this with the same signature to do anything
+    interesting.
+
+    Parameters
+    ----------
+    func : callable
+        a function with a signature
+
+    Returns
+    -------
+    types : List[str]
+        types that can be processed by codemodel for type checking; one for
+        each parameter in the signature
+    desc : List[Union[str, None]
+        descriptions of each parameter or None if no description can be
+        determined
+    """
     sig = inspect.signature(func)
     results = [("Unknown", None) for p in sig.parameters]
     if not results:
@@ -33,11 +53,13 @@ def package_from_import(import_statement):
     return package
 
 
-def make_package(import_statement, callable_names):
+def make_package(import_statement, callable_names,
+                 type_desc=default_type_desc):
     package = package_from_import(import_statement)
     module = importlib.import_module(package.name)
     for func_name in callable_names:
         func = getattr(module, func_name)
-        model = codemodel_from_callable(func, package=package)
+        model = codemodel_from_callable(func, type_desc=type_desc,
+                                        package=package)
         package.register_codemodel(model)
     return package
