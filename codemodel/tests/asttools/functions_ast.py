@@ -67,3 +67,14 @@ def return_dict_tester(a):
     elif a < 0:
         return {'name': 'negative', 'baz': '-'+baz}
     return {'name': 'zero', 'baz': '0'}
+
+def undefined_names_tester(a, b):
+    alpha = a + b
+    def bar(baz):
+        baz += 1
+        if baz == alpha:
+            return True
+        return False
+    beta = b - a
+    a.purple = b.green
+    b = blue

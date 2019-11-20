@@ -1,6 +1,6 @@
 import pytest
 
-from codemodel.imports import *
+from codemodel.asttools.imports import *
 
 # used in multiple parametrized tests
 IMPORT_NAMES = {

@@ -6,7 +6,7 @@ import typing
 import astor
 
 import codemodel
-from codemodel import imports, asttools
+from codemodel import asttools
 
 class UserAST(typing.NamedTuple):
     ast_maker: typing.Callable[[typing.Dict[str, ast.AST], str], ast.AST]
@@ -163,7 +163,7 @@ class CodeModel(object):
         """the callable for this code model"""
         if not self.package:
             raise RuntimeError("Can't get function without `package` set")
-        imports_dict = imports.import_names(self.package.import_statement)
+        imports_dict = asttools.import_names(self.package.import_statement)
         imported_modules = {name: importlib.import_module(mod)
                             for name, mod in imports_dict.items()}
         func = getattr(imported_modules[self.package.implicit_prefix],
