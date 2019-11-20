@@ -34,7 +34,7 @@ install:
   - conda create --yes -n codemodel-py${CONDA_PY} python=$CONDA_PY
   - source activate codemodel-py${CONDA_PY}
   - pip install -e .
-  - [ -z "$CODEMODEL_EXTRAS" ] && pip install -r ./devtools/extras.txt
+  #- [ -z "$CODEMODEL_EXTRAS" ] && pip install -r ./devtools/extras.txt
   - pip install -r ./devtools/tests_require.txt
   - pip list
 

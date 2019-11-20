@@ -10,5 +10,5 @@ def numpydoc_type_desc(thing):
 
     npdoc_params = docs["Parameters"]
     types = [p.type for p in npdoc_params]
-    descs = [p.desc for p in npdoc_params]
+    descs = [" ".join(p.desc) for p in npdoc_params]
     return types, descs
