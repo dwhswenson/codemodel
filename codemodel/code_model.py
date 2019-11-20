@@ -109,11 +109,12 @@ class CodeModel(object):
 
         return ast_sections
 
-
-    @staticmethod
-    def _call_func_order(setup):
+    def _call_func_order(self, setup):
         if setup is None:
             return (None, None, None)
+
+        if setup == {50: self.func}:
+            return ([], self.func, [])
 
         funcs, trees = zip(*[(func, asttools.func_to_body_tree(func))
                              for (_, func) in sorted(list(setup.items()))])
