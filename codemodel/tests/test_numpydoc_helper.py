@@ -1,7 +1,7 @@
 import pytest
 
 try:
-    import nummpydoc
+    import numpydoc
 except ImportError:
     HAS_NUMPYDOC = False
 else:
@@ -34,6 +34,5 @@ def test_numpydoc_type_desc(obj):
 def test_numpydoc_type_desc_fails_builtin():
     if not HAS_NUMPYDOC:
         pytest.skip("Skipping: numpydoc not installed")
-    types, descs = numpydoc_type_desc(obj)
     with pytest.raises(RuntimeError):
         numpydoc_type_desc(hash)
