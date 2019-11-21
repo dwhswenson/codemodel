@@ -24,7 +24,7 @@ class ExampleClass(object):
 
 @pytest.mark.parametrize("obj", [ExampleClass, example_function])
 def test_numpydoc_type_desc(obj):
-    if HAS_NUMPYDOC:
+    if not HAS_NUMPYDOC:
         pytest.skip("Skipping: numpydoc not installed")
     types, descs = numpydoc_type_desc(obj)
     assert types == ['int', 'float']
@@ -32,7 +32,7 @@ def test_numpydoc_type_desc(obj):
 
 
 def test_numpydoc_type_desc_fails_builtin():
-    if HAS_NUMPYDOC:
+    if not HAS_NUMPYDOC:
         pytest.skip("Skipping: numpydoc not installed")
     types, descs = numpydoc_type_desc(obj)
     with pytest.raises(RuntimeError):
