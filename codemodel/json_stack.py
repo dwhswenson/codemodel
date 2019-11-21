@@ -1,5 +1,6 @@
 import json
 import inspect
+import importlib
 
 import codemodel
 
@@ -123,6 +124,15 @@ class Package(object):
         self.model_types = []
         for model, model_t in zip(callables, model_types):
             self.register_codemodel(model, model_t)
+
+    @property
+    def module(self):
+        if self.import_statement is None:
+            pass  # try using the name?
+        imports = codemodel.asttools.import_names(self.import_statement)
+        assert len(imports) == 1
+        modname = list(imports.values())[0]
+        return importlib.import_module(modname)
 
     def register_codemodel(self, code_model, model_type=None):
         if model_type is None:

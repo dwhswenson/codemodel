@@ -96,9 +96,11 @@ def package_from_import(import_statement):
 
 
 def make_package(import_statement, callable_names,
-                 type_desc=default_type_desc):
+                 type_desc=default_type_desc, name=None):
     package = package_from_import(import_statement)
-    module = importlib.import_module(package.name)
+    if name is not None:
+        package.name = name
+    module = package.module
     for func_name in callable_names:
         func = getattr(module, func_name)
         # the following also registers the model with the package
