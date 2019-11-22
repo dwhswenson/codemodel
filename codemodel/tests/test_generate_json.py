@@ -63,5 +63,20 @@ def test_package_from_import(import_statement, package_info):
     assert package.name == expected.name
     assert package.callables == []
 
-def test_make_package():
-    pytest.skip()
+@pytest.mark.parametrize("name", [None, "ospath"])
+def test_make_package(name):
+    import os.path
+    package = make_package(
+        import_statement="from os import path",
+        callable_names=['exists', 'abspath'],
+        name=name
+    )
+
+    expected_name = {None: "os.path", "ospath": "ospath"}[name]
+
+    assert package.name == expected_name
+    assert package.import_statement == "from os import path"
+    assert package.implicit_prefix == "path"
+    assert len(package.callables) == 2
+    assert package.callables[0].name == 'exists'
+    assert package.callables[0].func == os.path.exists
