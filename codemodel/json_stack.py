@@ -1,5 +1,6 @@
 import json
 import inspect
+import importlib
 
 import codemodel
 
@@ -115,15 +116,36 @@ class Package(object):
         if model_types is None:
             model_types = ["CodeModel"] * len(callables)
 
+
         self.name = name
         self.import_statement = import_statement
         self.implicit_prefix = implicit_prefix
-        self.callables = callables
-        self.model_types = model_types
+        self.callables = []
+        self.model_types = []
+        for model, model_t in zip(callables, model_types):
+            self.register_codemodel(model, model_t)
+
+    @property
+    def module(self):
+        if self.import_statement is None:
+            pass  # try using the name?
+        imports = codemodel.asttools.import_names(self.import_statement)
+        assert len(imports) == 1
+        modname = list(imports.values())[0]
+        return importlib.import_module(modname)
+
+    def register_codemodel(self, code_model, model_type=None):
+        if model_type is None:
+            model_type = "CodeModel"
+
+        self.callables.append(code_model)
+        self.model_types.append(model_type)
 
     def __hash__(self):
         return hash((self.name, self.import_statement, self.implicit_prefix,
-                     tuple(self.model_types), tuple(self.callables)))
+                     tuple(self.model_types),
+                     tuple((c.name, tuple(c.parameters))
+                           for c in self.callables)))
 
     def __eq__(self, other):
         return hash(self) == hash(other)
@@ -139,11 +161,14 @@ class Package(object):
     @classmethod
     def from_dict(cls, dct):
         dct = dict(dct)  # copy
-        dct['callables'] = [
-            CODEMODEL_TYPES[model_t].from_dict(call_dct)
-            for model_t, call_dct in zip(dct['model_types'], dct['callables'])
-        ]
-        return cls(**dct)
+        callables = dct.pop('callables')
+        dct['callables'] = []
+        pkg = cls(**dct)
+        for model_t, call_dct in zip(dct['model_types'], callables):
+            model = CODEMODEL_TYPES[model_t].from_dict(call_dct, package=pkg)
+            pkg.register_codemodel(model)
+
+        return pkg
 
 
 def load_json(filename):

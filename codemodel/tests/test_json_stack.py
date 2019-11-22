@@ -111,6 +111,10 @@ class TestPackage(object):
     def test_from_dict(self):
         assert Package.from_dict(self.dct) == self.package
 
+    def test_module(self):
+        import os.path
+        assert self.package.module == os.path
+
     def test_dict_serialize_cycle(self):
         serialized = self.package.to_dict()
         deserialized = Package.from_dict(serialized)

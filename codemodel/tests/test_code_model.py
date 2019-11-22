@@ -109,9 +109,12 @@ class TestCodeModel(object):
         counter_params = [codemodel.Parameter(param, "Unknown")
                           for param in counter_sig.parameters.values()]
 
+        ospath_callables = mock.MagicMock()
+        ospath_callables.__len__.return_value = 1
         ospath = mock.Mock(import_statement="from os import path",
                            implicit_prefix="path",
-                           model_types=['CodeModel'])
+                           model_types=['CodeModel'],
+                           callables=ospath_callables)
 
         self.packages = {'unpackaged': None, 'packaged': ospath}
 
