@@ -137,10 +137,23 @@ class CodeModel(object):
 
 
     def __hash__(self):
-        return hash((self.name, tuple(self.parameters), self.package))
+        myhash = hash((self.name, tuple(self.parameters)))
+        if self.package:
+            # need a special hash here otherwise we get recursion
+            myhash = hash((myhash, self.package.name,
+                           self.package.import_statement,
+                           len(self.package.callables)))
+        return myhash
+
 
     def __eq__(self, other):
-        return hash(self) == hash(other)
+        if self.package == other.package:
+            return hash(self) == hash(other)
+        elif self.package is None or other.package is None:
+            return hash((self.name, tuple(self.parameters))) == \
+                    hash((other.name, tuple(other.parameters)))
+        else:
+            return False  # definitely from different packages!
 
     def __repr__(self):  # no-cover
         repr_str = ("CodeModel(name={c.name}, parameters={c.parameters} "

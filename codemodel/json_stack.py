@@ -143,7 +143,9 @@ class Package(object):
 
     def __hash__(self):
         return hash((self.name, self.import_statement, self.implicit_prefix,
-                     tuple(self.model_types), tuple(self.callables)))
+                     tuple(self.model_types),
+                     tuple((c.name, tuple(c.parameters))
+                           for c in self.callables)))
 
     def __eq__(self, other):
         return hash(self) == hash(other)
@@ -159,11 +161,14 @@ class Package(object):
     @classmethod
     def from_dict(cls, dct):
         dct = dict(dct)  # copy
-        dct['callables'] = [
-            CODEMODEL_TYPES[model_t].from_dict(call_dct)
-            for model_t, call_dct in zip(dct['model_types'], dct['callables'])
-        ]
-        return cls(**dct)
+        callables = dct.pop('callables')
+        dct['callables'] = []
+        pkg = cls(**dct)
+        for model_t, call_dct in zip(dct['model_types'], callables):
+            model = CODEMODEL_TYPES[model_t].from_dict(call_dct, package=pkg)
+            pkg.register_codemodel(model)
+
+        return pkg
 
 
 def load_json(filename):
