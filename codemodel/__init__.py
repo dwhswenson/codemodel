@@ -3,6 +3,7 @@
 from .code_model import CodeModel, Instance
 from .json_stack import Parameter, Package, load_json
 from .generate_json import make_package, codemodel_from_callable
+from . import dag
 
 # docstring helpers aren't required
 try:

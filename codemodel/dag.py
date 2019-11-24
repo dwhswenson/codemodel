@@ -43,13 +43,31 @@ class DAG(object):
 
     @classmethod
     def from_dependency_dict(cls, dependencies, keys="to"):
+        """Create a DAG from a dictionary of dependencies.
+
+        Parameters
+        ----------
+        dependencies : Dict[Any, List[Any]]
+            dependency chart; directed edges defined between the key each
+            element in the associated lit of values
+        keys : str
+            "to" or "from" depending on whether the keys of the dependency
+            dictionary are the "to" nodes (default) or the "from" nodes
+
+        Returns
+        -------
+        :class:`.DAG` :
+            resulting DAG
+        """
         edge_maker = {
             "to": lambda k, v: Edge(v, k),
             "from": lambda k, v: Edge(k, v)
         }[keys]
         bare_nodes = [k for k in dependencies if dependencies[k] == []]
-        edge_pairs = [
-            (k, v)
+        edges = [
+            edge_maker(key_node, val_node)
+            for key_node, deps in dependencies.items()
+            for val_node in deps
         ]
 
         dag = cls()
