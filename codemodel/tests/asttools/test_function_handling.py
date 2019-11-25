@@ -32,6 +32,14 @@ def test_get_args_kwargs(func, results):
     param_dict.update({'varkw': {'var': 'kw'}, 'varpos': ['v', 'a', 'r']})
     assert get_args_kwargs(func, param_dict) == results
 
+@pytest.mark.parametrize("param_dict, results", [
+    ({'pkw': 'pkw'}, {}),
+    ({'pkw': 'pkw', 'foo': 'foo'}, {'foo': 'foo'})
+])
+def test_get_unused_params(param_dict, results):
+    func = FuncSigHolder.foo_pkw
+    assert get_unused_params(func, param_dict) == results
+
 
 tab_indented = """
 	def indent_test(foo):

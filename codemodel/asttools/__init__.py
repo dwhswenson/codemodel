@@ -1,8 +1,8 @@
 from .imports import validate_imports, import_names
 
 from .function_handling import (
-    organize_parameter_names, get_args_kwargs, deindented_source,
-    func_to_body_tree
+    organize_parameter_names, get_args_kwargs, get_unused_params,
+    deindented_source, func_to_body_tree
 )
 from .validators import (
     ScopeTracker, ScopeLister, count_returns,
