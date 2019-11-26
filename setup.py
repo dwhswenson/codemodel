@@ -29,13 +29,15 @@ PACKAGES=['codemodel', 'codemodel.tests']
 # This DESCRIPTION is only used if a README.rst hasn't been made from the
 # markdown version
 DESCRIPTION="""
+Metaprogramming tools
 """
 SHORT_DESCRIPTION="Advanced metaprogramming tools"
 
 # note: leave the triple quotes on separate lines from the classifiers
+# TODO: add more classifiers
 CLASSIFIERS="""
 Development Status :: 2 - Pre-Alpha
-License :: OSI Approved :: MIT License  # TODO
+License :: OSI Approved :: MIT License
 Operating System :: POSIX
 Programming Language :: Python :: 3
 """
