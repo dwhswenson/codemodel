@@ -29,6 +29,7 @@ PACKAGES=['codemodel', 'codemodel.tests']
 # This DESCRIPTION is only used if a README.rst hasn't been made from the
 # markdown version
 DESCRIPTION="""
+Metaprogramming tools
 """
 SHORT_DESCRIPTION="Advanced metaprogramming tools"
 
