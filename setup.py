@@ -12,7 +12,7 @@ from setuptools import setup
 ####################### USER SETUP AREA #################################
 # * VERSION: base version (do not include .dev0, etc -- that's automatic)
 # * IS_RELEASE: whether this is a release
-VERSION = "0.0.1"
+VERSION = "0.0.3.post0"
 IS_RELEASE = True
 
 DEV_NUM = 0  # always 0: we don't do public (pypi) .dev releases
@@ -24,7 +24,7 @@ REQUIREMENTS=['astor']
 
 # PACKAGES should list any subpackages of the code. The assumption is that
 # package.subpackage is located at package/subpackage
-PACKAGES=['codemodel', 'codemodel.tests']
+PACKAGES=['codemodel', 'codemodel.tests', 'codemodel.asttools']
 
 # This DESCRIPTION is only used if a README.rst hasn't been made from the
 # markdown version

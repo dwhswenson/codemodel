@@ -71,10 +71,12 @@ jobs:
       # been deployed to testpypi. It checks that the deployed package
       # works.
       if: "(branch = stable) and (type = pull_request)"
-      python: '3.8'
+      python: '3.6'
       install:
+        - ./devtools/wait_for_testpypi.sh setup.py
+        - PROJECT=`python setup.py --name`
         - pip install -U -r ./devtools/tests_require.txt
-        - pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple codemodel
+        - pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple $PROJECT
       script:
         - cd ~
         - python -c "import codemodel"
