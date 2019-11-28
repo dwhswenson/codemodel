@@ -7,7 +7,7 @@ branches:
   only:
   - master
   - stable
-  - /^v\d+(\.\d+)+$/
+  - /^v\d+(\.\d+)+/
 
 env:
   global:
@@ -114,4 +114,4 @@ jobs:
         on:
             tags: true
         password:
-          secure: "lFXlQ7WVHxRFuHpa7rYygMCJFXb60HnJef1r0LMS+IJ3Lzjg4OJNXtuSEgT/h3R/lQTdGUBXaDDN4huid5KpPKO3xdKwqG5vvAhi0ai4f47Z4oGEKo5UtIUnEF0xi6dgcFnoCzm7qxsJw8U4kKT470iR5R7Ns8Hsln63zOY3w6ofUAsQHXjRTvrvolsS2RSE/KNm9qfdIQGS8u12i+zF1zUcvJEdIcRzhHKIpGga6P7PqqJenGRoC4DuZ8yb8FxUgGqpY3jyt+Hz0N7ge3B7s07xE4dWthTJ6Y7qA8wDt7KbjcKBNV65qZyQABQDwtFseGYS6tma1irOTd6tRf0iGWvEstfSAso8E2pIT2paSSQYE+1ArDe8l5zr0/dEZEPQxost4mBUgAPXIvV6N2jCb2ZA0BYWqR+V68nc+i8ufDAeFZTYVtNhld7HqCFBIJEKgn980IAhZtsVx4T3uT5AGYxze6wP1tx0H/AYDnv1gSLdaXi6JRWoSma87xZErr0zlNr3DaE73+EKjVHVDi0WXZaM952PUy3O0V7aRtU5k6f2cRwcYdOnPcaXdysHB7Zd5wrUR0RrKhLsVd7oIFmTGjcA873V+wG6HN7dTtr/wvnFxvUCGGQvKTp2iB4bqcrcvFsnW+c4CUwMcZ7kLMiXnRIm/ejFjjY/ztgAcejl5jI="
+          secure: "RlnvzdsyRBWqPEtoXWrXI0MAEyeATR5mj9PrIeklFnvDJy/9Cg9dttAa2swFfRjFJhgkEeSYJSJ5RHX7KUJ1M3A25kXaK4hxNElPAbDWvE77IrMmXIlogCD/KeKI6wqsJUkDIKFoYu437xHEDXG76Yh2qTHcgUrsA5N+GxUWnDFeHlLdQNLI3GiXIuTL3rp8DMBhOdV7i7fB4Y8kzw1AA4PmscmDrsxNx5NAE0tVxMbX+WjPLKkGQzIps+0gDX33bpHnVznvncM/uIV7bWJdpPC56yDLz4cKf5mY9yqYRHvnR+e50bYKiYEu4efXef2nx7t6/ZEyQV/u6diC64oXcGNpzXzxpOq8OvOeiMK6VIj4Q6TKajHKIx9QKL4WUmoWLfCuYMEi/SzIrAydWbI8eXH7lhx+F1+otSZlPiXrMZH8ivCtVLtdGkMCsSm8tA6xdcwjP0cbEk4JOxxBEEDSdq2Xsd5vH7qhG8dm6d7cjA+7fWlQXTCIZoDGgwFla27CYYAiskQL7tc/yFsYM/XDpgYS9NW0gxCfsYH6jqSByNwCzlDOa3JKdnSS3L7vDi0jDvdA/vs+EyPZZvvQIeN9vWw6hD3H2fUrXj/pUjTNJCN+64V+9hYBWoH/zfDou0uiyjEKmkpsET8sbTKH8PsNJ2avX5I6vsTZn+gsJuyIDoQ="
