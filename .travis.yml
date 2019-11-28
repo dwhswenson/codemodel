@@ -7,7 +7,7 @@ branches:
   only:
   - master
   - stable
-  - /^v\d+(\.\d+)+$/
+  - /^v\d+(\.\d+)+/
 
 env:
   global:
@@ -17,7 +17,7 @@ env:
     # TWINE_PASSWORD
     - secure: "SVu3pb6i/7unpNG5YbIEifWE/8wTuQb7D9QQZI0lD3vJYpCy0aRYy7FCYRV3KeBxXLrLTfVGyXjrnCJPs3IdY0po35xnmqU9teFOeOJL4K2Ai8LiXUJmDSdmgtrvHnMKKj7VWJXvlndVxGlBGSf8MPIBcwDa6R2G+8Mzak5OQSCv28WP40ZiO6wF3wAg5Oc4aszUNWoiTu1HIf7Zo1IPw6ZS35szpfKhAkyfPAK7+7SW2/YfkadVtrmL1rw1mtmatQjOVRVAnUfPud//K/4URefMcDha/yM0D7WuZbHUY/SmaDx/1ZbhMPGPrm2cUNYKX76VJWfYNByDh8bSpHVtiS365ygJiwzD4q5wx0zv8CltMbcHvBYuROmPPUFrfg+UkL4nVYmXRMjRP3WFPJ9zILe3p3Cptzuh60Fb6aXHYiJ4NB+340QiMisqYYf6WGvxjDJN8NrrPmPeGvvdjnK/fxo0zs3pZOT7qoFqNtLLFWAatWDpoUty6RaZFuDxgBkcVKy9A/1nd3Dx2AWHHGz7DU0qcX3P0e8AoHGE3/nK7ueCKKKpy/EaUTrVXsnwkE2SZlDn86qpgSB5ecaFMijW+80jAPnjlrI9vyoyb1Yd7EivXoDBSEvF7pm8fle4yThpfxOPWxPQ4M/+ruigiukcFPLEKDPQ8EDsMv2iH7u0vho="
     # AUTORELEASE_TOKEN
-    - secure: "R8PbQ+IDNddIbQ1el7aDtEPS++P0BhdlnPhzs39QuUl9p1DBczNOeEfZvo9WyVpE7lGQHIoouyrKO8f5FyxTG5LEA4iUKB9SQvE6S5D/9Ha8k76rtCtw8yTW2vSgXMlh4cAL7YgQeOrsHNIH3faD+vRiBZyJ6aHejyXUNAA6BxsA7YTnExglNkSr2vcwMdCtzzM5at3krqX5ksyITbPa5wU8/ZI2qWgkfKIwt869HRhMB/G3ZAGZyYlNIateyiTm8oWNeJTfa3/mNu2CpLwue47oMudiKD7G+gL2JFsTEQjivKu0DO4X5aYFuumYaiaD+EDCQAHSlDhe1f6rPC9Tgt915V3DqHN38MeIjl87vNJsSUwDnU9F/p6EPUDIhH+T9CitdXAXjXanbTgLkHLF01jspuX8QbuFFSBD89T+CHgvViLanqoJ8pY+W9UGObISsHFbELrrsfRcZszmX22rTlc2r2NxNl6Glo4Z3kiStKbRY5PBQmxiYBIGhBzh27mv5RBekrzBgHQCYp8QNplIZ5pA6AvQrjgbOhR2tfbuSIMJ+I5bx+4XI7i3Ce+si96l3yUQQLduAIFpldtnFZvKbbpXvHXV76NJGcGqsyaCQebQbhRyctU+GHSuEhz6Pz7WloTbiQDBe1icNJH2A68yMLjxAhkC8lyJ6jziVjJ1VdU="
+    - secure: "FKEhbyaPmQI8BmO0HYyernKcGpjEdB+GM5jO8cpLJ7DjqLGG73FpeE0EkAUDMm/k0e+V7/xfOP8gZjx9fMkmIZyndZVv/rkcMZy7uwdpM3CZbys7BRUbIk6fbpnIjxOAI6HJywq3UtmvbGQ/UXIjZ+tPbzTg6Iuf/PADlU4OmzgxWKxPmoJTHy05w/pdnPhXY/zXewLmwEeE0zM4i6jOOwClsLdEy+yfvRTtZXJEr7OHOHnuc6i8SO3eiml7y+17Kcf6iBZp2LFqW1qJxzF9SyqiyDHU/n2suWSl6dR/XCQNhI497pBjZN0RsFzXscnlG6JEfu7F4OcFRZZqfdW266UyKWRX5VcdxdGdHsQAfa7cuHdHFp4bQBSGieokzirHgfe1H/aBdNZtNVdCyx2/jqfQE2V6P08rcymfUiSK+Wqbp8NF4pJ4yaH3tgr1qCnu/HUGkzFxnT6Qq7PMPo5kEHRZihBthiMWAv00b/3JaBQoir3hFecLAQHEA/Ru6YvFOIvKOQ/Db1NbJQ5SrL6ybyhmFA+RI/wbWmEchOb8jsRY2wOhxybWaoci5gJBMAA1FQPpSIbnK1aX4pkylKunlCwVzmAu+wmQBONJmClzpFczHjBsBeXOv5HYEY1UotzZAdEutrA+mS9NFx68eHaGwGC3YpEp/VpBP6PuQDOZS9I="
   matrix:
     - CONDA_PY=3.6
     - CONDA_PY=3.7
@@ -58,9 +58,12 @@ jobs:
           - pandoc
       install:
         - pip install twine
-      script: 
+      script:
         - pandoc --from=markdown --to=rst --output=README.rst README.md
+        - if [ -z "$TWINE_PASSWORD" ]; then echo "Missing password"; fi
+        - if [ -z "$TWINE_USERNAME" ]; then echo "Missing username"; fi
         - python setup.py sdist bdist_wheel
+        - python -m keyring --disable
         - twine upload --repository-url https://test.pypi.org/legacy/ dist/*
       after_success: skip
     - stage: test testpypi
@@ -68,11 +71,12 @@ jobs:
       # been deployed to testpypi. It checks that the deployed package
       # works.
       if: "(branch = stable) and (type = pull_request)"
-      python: '3.8'
+      python: '3.6'
       install:
-        - source ci/pip-install/install_requirements.sh
-        - pip install -U -r ci/pip-install/testing_requirements.txt
-        - pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple codemodel
+        - ./devtools/wait_for_testpypi.sh setup.py
+        - PROJECT=`python setup.py --name`
+        - pip install -U -r ./devtools/tests_require.txt
+        - pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple $PROJECT
       script:
         - cd ~
         - python -c "import codemodel"
@@ -110,4 +114,4 @@ jobs:
         on:
             tags: true
         password:
-          secure: "UN99BfNgMlE1qOwkbvJYMEdPGVF02dnZ5iF9HZY5HwJr7nlW1ixEGn6SzICS7WwLzthfqpbwXaqVGEsbsn1YwsvQe72JyCZxftoxZC2bVi5JV/OZka5uUTx0NXtzukZp33AUTDA9J2vushIxZCHSJG+GFqx4c+L8Y194V0QS4sw/lbtGC3qZ8jmszCnRgfPbb0tmCe4Jj1snclspPXhYtXL2z9Xh4r+ImCfosBFfThtsUs6t37/Jrx1srmDrt0eaGGBm1NAcyIVP6x03TdVVUFt/ud3U7+o0iHhqdEZKfUc2Dp6YN08Ck6Zyr/dR/A0Sc3/pWvytXwXLzOj+d7BtaAmPApcAc6v5GEmwWc4mkdsD+CEEW1q3CEFbWq6RTL+oa2zvEO6k0VrnHMCni3KqsWGmF6B209tHhy8jFAmCIruD2foUz7NxEKWNEOR4bqIjOGGIgGp4mfH+1l73JrI995ZmB1PqiIkxVeX0nPrZUZtBxOUyxg6aiL+NHMaYr5NCq2uCzDYhtwWnk26Oq6/JAEMxN+SCiC+O+DSvdQaUgUp6eS5whHGvf27ZxRMkmTSYTIMN6V1/PQ9WWSFsy0QBUYB7UJf/JLFnTi5xHj08jFNzUVOmeyq9MBzJF/ztnTTBSJgzNDROV+2qsZC0Ulm/hesMe0Swxqu/S5PelzrgwCA="
+          secure: "RlnvzdsyRBWqPEtoXWrXI0MAEyeATR5mj9PrIeklFnvDJy/9Cg9dttAa2swFfRjFJhgkEeSYJSJ5RHX7KUJ1M3A25kXaK4hxNElPAbDWvE77IrMmXIlogCD/KeKI6wqsJUkDIKFoYu437xHEDXG76Yh2qTHcgUrsA5N+GxUWnDFeHlLdQNLI3GiXIuTL3rp8DMBhOdV7i7fB4Y8kzw1AA4PmscmDrsxNx5NAE0tVxMbX+WjPLKkGQzIps+0gDX33bpHnVznvncM/uIV7bWJdpPC56yDLz4cKf5mY9yqYRHvnR+e50bYKiYEu4efXef2nx7t6/ZEyQV/u6diC64oXcGNpzXzxpOq8OvOeiMK6VIj4Q6TKajHKIx9QKL4WUmoWLfCuYMEi/SzIrAydWbI8eXH7lhx+F1+otSZlPiXrMZH8ivCtVLtdGkMCsSm8tA6xdcwjP0cbEk4JOxxBEEDSdq2Xsd5vH7qhG8dm6d7cjA+7fWlQXTCIZoDGgwFla27CYYAiskQL7tc/yFsYM/XDpgYS9NW0gxCfsYH6jqSByNwCzlDOa3JKdnSS3L7vDi0jDvdA/vs+EyPZZvvQIeN9vWw6hD3H2fUrXj/pUjTNJCN+64V+9hYBWoH/zfDou0uiyjEKmkpsET8sbTKH8PsNJ2avX5I6vsTZn+gsJuyIDoQ="

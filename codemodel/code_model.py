@@ -6,7 +6,7 @@ import typing
 import astor
 
 import codemodel
-from codemodel import asttools
+import codemodel.asttools as asttools
 
 class UserAST(typing.NamedTuple):
     ast_maker: typing.Callable[[typing.Dict[str, ast.AST], str], ast.AST]

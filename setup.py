@@ -12,7 +12,7 @@ from setuptools import setup
 ####################### USER SETUP AREA #################################
 # * VERSION: base version (do not include .dev0, etc -- that's automatic)
 # * IS_RELEASE: whether this is a release
-VERSION = "0.0.1"
+VERSION = "0.0.5"
 IS_RELEASE = False
 
 DEV_NUM = 0  # always 0: we don't do public (pypi) .dev releases
@@ -24,18 +24,20 @@ REQUIREMENTS=['astor']
 
 # PACKAGES should list any subpackages of the code. The assumption is that
 # package.subpackage is located at package/subpackage
-PACKAGES=['codemodel', 'codemodel.tests']
+PACKAGES=['codemodel', 'codemodel.tests', 'codemodel.asttools']
 
 # This DESCRIPTION is only used if a README.rst hasn't been made from the
 # markdown version
 DESCRIPTION="""
+Metaprogramming tools
 """
 SHORT_DESCRIPTION="Advanced metaprogramming tools"
 
 # note: leave the triple quotes on separate lines from the classifiers
+# TODO: add more classifiers
 CLASSIFIERS="""
 Development Status :: 2 - Pre-Alpha
-License :: OSI Approved :: MIT License  # TODO
+License :: OSI Approved :: MIT License
 Operating System :: POSIX
 Programming Language :: Python :: 3
 """
