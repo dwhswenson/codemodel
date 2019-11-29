@@ -29,6 +29,7 @@ author = 'David W.H. Swenson'
 release = pkg_resources.get_distribution('codemodel').version
 version = packaging.version.Version(release).base_version
 
+master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
