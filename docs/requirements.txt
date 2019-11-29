@@ -1,0 +1,2 @@
+packaging
+sphinx_rtd_theme
