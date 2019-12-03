@@ -16,5 +16,5 @@ else:
 
 
 DEFAULT_VALIDATOR = TypeValidation(
-    [StandardTypeValidator(STANDARD_TYPES_DICT)] + arr_factory
+    [StandardValidatorFactory(STANDARD_TYPES_DICT)] + arr_factory
 )
