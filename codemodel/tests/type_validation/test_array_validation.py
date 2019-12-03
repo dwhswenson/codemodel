@@ -36,6 +36,7 @@ def test_parse_array_type_errors(type_str):
     "array((2, ...), int)"
 ])
 def test_is_array_type_true(type_str):
+    _ = pytest.importorskip("numpy")
     assert is_array_type(type_str)
 
 @pytest.mark.parametrize("type_str", [
@@ -43,6 +44,7 @@ def test_is_array_type_true(type_str):
     "array(int, 2)", "array(2, foo)", "array((2, 'foo'), int)",
 ])
 def test_is_array_type_false(type_str):
+    _ = pytest.importorskip("numpy")
     assert not is_array_type(type_str)
 
 
