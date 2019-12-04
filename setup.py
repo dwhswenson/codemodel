@@ -24,7 +24,8 @@ REQUIREMENTS=['astor']
 
 # PACKAGES should list any subpackages of the code. The assumption is that
 # package.subpackage is located at package/subpackage
-PACKAGES=['codemodel', 'codemodel.tests', 'codemodel.asttools']
+PACKAGES=['codemodel', 'codemodel.tests', 'codemodel.asttools',
+          'codemodel.type_validation']
 
 # This DESCRIPTION is only used if a README.rst hasn't been made from the
 # markdown version
