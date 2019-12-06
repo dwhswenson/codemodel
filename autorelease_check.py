@@ -1,20 +1,22 @@
 import setup
 import codemodel
 
-from autorelease import DefaultCheckRunner, conda_recipe_version
+import autorelease
 from packaging.version import Version
+
+SETUP_VERSION  = autorelease.version.get_setup_version(None, directory='.')
 
 repo_path = '.'
 versions = {
     'package': codemodel.version.version,
-    'setup.py': setup.PACKAGE_VERSION,
+    'setup.py': SETUP_VERSION,
 }
 
 RELEASE_BRANCHES = ['stable']
-RELEASE_TAG = "v" + Version(setup.PACKAGE_VERSION).base_version
+RELEASE_TAG = "v" + Version(SETUP_VERSION).base_version
 
 if __name__ == "__main__":
-    checker = DefaultCheckRunner(
+    checker = autorelease.DefaultCheckRunner(
         versions=versions,
         setup=setup,
         repo_path='.'

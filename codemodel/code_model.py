@@ -251,6 +251,7 @@ def to_ast(obj):
 
 
 class Instance(object):
+    validator = codemodel.type_validation.DEFAULT_VALIDATOR
     """Representation of an instance (noun-like object) in the source.
 
     In particular, this gives us access to the important values:
