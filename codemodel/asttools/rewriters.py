@@ -3,8 +3,8 @@ import collections
 import inspect
 import functools
 
-from codemodel.asttools.validators import *
-from codemodel.asttools import func_to_body_tree, get_args_kwargs
+from .validators import *
+from .function_handling import func_to_body_tree, get_args_kwargs
 
 ### AST REWRITERS ########################################################
 

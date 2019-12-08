@@ -6,7 +6,7 @@ import typing
 import astor
 
 import codemodel
-from codemodel import asttools
+import codemodel.asttools as asttools
 
 class UserAST(typing.NamedTuple):
     ast_maker: typing.Callable[[typing.Dict[str, ast.AST], str], ast.AST]
@@ -259,6 +259,7 @@ def to_ast(obj):
 
 
 class Instance(object):
+    validator = codemodel.type_validation.DEFAULT_VALIDATOR
     """Representation of an instance (noun-like object) in the source.
 
     In particular, this gives us access to the important values:
