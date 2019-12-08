@@ -203,19 +203,27 @@ class CodeModel(object):
 
         func_param_dict = dict(instance.param_dict)  # copy
 
+        def run_return_dict_func(func, func_param_dict):
+            args, kwargs = asttools.get_args_kwargs(func, func_param_dict)
+            passthrough = asttools.get_unused_params(func, func_param_dict)
+            func_param_dict = func(*args, **kwargs)
+            func_param_dict.update(passthrough)
+            return func_param_dict
+
         for func in self._pre_call:
-            # TODO: fix this for positional arguments
-            func_param_dict = func(**func_param_dict)
+            # func_param_dict = func(**func_param_dict)
+            func_param_dict = run_return_dict_func(func, func_param_dict)
 
         obj = self._main_call(**func_param_dict)
 
         for func in self._post_call:
-            func_param_dict = func(**func_param_dict)
+            func_param_dict = run_return_dict_func(func, func_param_dict)
+            # func_param_dict = func(**func_param_dict)
 
         return obj
 
-    def _default_setup_ast(self, param_dict, assign=None):
-        return asttools.create_call_ast(self.func, param_dict,
+    def _default_setup_ast(self, param_ast_dict, assign=None):
+        return asttools.create_call_ast(self.func, param_ast_dict,
                                         assign=assign,
                                         prefix=self.package.implicit_prefix)
 
@@ -226,11 +234,13 @@ class CodeModel(object):
                       for name, param in instance.param_dict.items()}
         ast_sections = {}
         ast_funcs = self._ast_funcs
+        print(params_ast)
         for sec_id, func in self.setup.items():
             if func == self._main_call:
-                sec_ast = ast_funcs[sec_id](params_ast, assign=instance.name)
+                sec_ast = ast_funcs[sec_id](param_ast_dict=params_ast,
+                                            assign=instance.name)
             else:
-                sec_ast = ast_funcs[sec_id](params_ast)
+                sec_ast = ast_funcs[sec_id](param_ast_dict=params_ast)
             ast_sections[sec_id] = sec_ast
 
         return ast_sections

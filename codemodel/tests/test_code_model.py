@@ -9,6 +9,19 @@ from codemodel.code_model import *
 
 import collections
 
+class PassThroughParameterExample(object):
+    # this takes a param_dict with two parameters, `num` and `power`
+    # TODO: does this also need to be tested if written in AST? I don't
+    # think so; at least, not until/unless we do more significant parameter
+    # checking of the user-provided AST.
+    @staticmethod
+    def prepare(num):
+        return {'data': num * 2}
+
+    @staticmethod
+    def do_power(data, power):
+        return data**power
+
 
 class SectionsExample(object):
     import ast
@@ -295,6 +308,8 @@ class TestInstance(object):
         import os.path
         exists = os.path.exists
 
+        default_kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
+
         # TODO: try several more complicated code models
         self.models = {
             'os.path.exists': CodeModel(
@@ -307,18 +322,42 @@ class TestInstance(object):
                                   implicit_prefix="path",
                                   model_types=['CodeModel'])
             ),
+            'pass_through': CodeModel(
+                name="pass_through",
+                parameters=[
+                    codemodel.Parameter(
+                        parameter=inspect.Parameter(name="num",
+                                                    kind=default_kind),
+                        param_type='int'
+                    ),
+                    codemodel.Parameter(
+                        parameter=inspect.Parameter(name="power",
+                                                    kind=default_kind),
+                        param_type='int'
+                    )
+                ],
+                package=None,
+                setup={10: PassThroughParameterExample.prepare,
+                       50: PassThroughParameterExample.do_power}
+            ),
         }
         self.param_dict = {
             'os.path.exists': {'path': __file__},
+            # TODO: these should be strings, but need to fix up move type
+            # validation back into instantiation for that
+            'pass_through': {'num': 3, 'power': 2},
         }
         self.expected = {
             'os.path.exists': True,
+            'pass_through': (2*3)**2,
         }
         self.expected_code = {
             'os.path.exists': {
                 50: (r"path_exists = path.exists\(path\=\s*'"
                      + str(__file__) + r"'\s*\)")
             },
+            'pass_through': {10: (r"data = 3 \* 2\s*"),
+                             50: r"result = data \*\* 2\s*"},
         }
         self.instances = {
             'os.path.exists': Instance(
@@ -326,10 +365,18 @@ class TestInstance(object):
                 code_model=self.models['os.path.exists'],
                 param_dict=self.param_dict['os.path.exists']
             ),
+            'pass_through': Instance(
+                name="result",
+                code_model=self.models['pass_through'],
+                param_dict=self.param_dict['pass_through']
+            ),
         }
 
-    def test_instance(self):
-        model_name = 'os.path.exists'
+
+    @pytest.mark.parametrize("model_name", [
+        'os.path.exists', 'pass_through',
+    ])
+    def test_instance(self, model_name):
         model = self.models[model_name]
         instance_obj = self.instances[model_name]
         instance = instance_obj.instance
@@ -345,8 +392,10 @@ class TestInstance(object):
         assert instance_obj.code_name != instance_obj.name
         assert instance_obj.name == old_name
 
-    def test_code_sections(self):
-        model_name = 'os.path.exists'
+    @pytest.mark.parametrize("model_name", [
+        'os.path.exists', 'pass_through',
+    ])
+    def test_code_sections(self, model_name):
         instance_obj = self.instances[model_name]
         code_sections = instance_obj.code_sections
         for sec_id, code in code_sections.items():
