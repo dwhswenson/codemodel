@@ -343,7 +343,9 @@ class TestInstance(object):
         }
         self.param_dict = {
             'os.path.exists': {'path': __file__},
-            'pass_through': {'num': '3', 'power': '2'},
+            # TODO: these should be strings, but need to fix up move type
+            # validation back into instantiation for that
+            'pass_through': {'num': 3, 'power': 2},
         }
         self.expected = {
             'os.path.exists': True,
@@ -354,8 +356,8 @@ class TestInstance(object):
                 50: (r"path_exists = path.exists\(path\=\s*'"
                      + str(__file__) + r"'\s*\)")
             },
-            'pass_through': {10: r"data = 3 * 2",
-                             50: r"result = data ** 2"},
+            'pass_through': {10: (r"data = 3 \* 2\s*"),
+                             50: r"result = data \*\* 2\s*"},
         }
         self.instances = {
             'os.path.exists': Instance(
