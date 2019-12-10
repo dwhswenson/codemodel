@@ -6,6 +6,7 @@ import inspect
 
 import codemodel
 from codemodel.code_model import *
+from codemodel.instance import *
 
 import collections
 
@@ -316,7 +317,7 @@ class TestInstance(object):
                 name="exists",
                 parameters=[codemodel.Parameter(
                     parameter=inspect.signature(exists).parameters['path'],
-                    param_type="Unknown"
+                    param_type="str"
                 )],
                 package=mock.Mock(import_statement="from os import path",
                                   implicit_prefix="path",

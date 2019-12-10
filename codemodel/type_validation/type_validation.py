@@ -1,6 +1,7 @@
 import collections
 import numbers
 import ast
+import codemodel
 
 class CodeModelTypeError(TypeError):
     pass
@@ -127,6 +128,7 @@ ValidatorFactory = collections.namedtuple(
 )
 
 class StandardValidatorFactory(object):
+    ValidatorClass = StandardTypeValidator
     def __init__(self, types_dict):
         self.types_dict = types_dict
 
@@ -135,4 +137,48 @@ class StandardValidatorFactory(object):
 
     def create(self, type_str):
         type_builtin, superclass = self.types_dict[type_str]
-        return StandardTypeValidator(type_str, type_builtin, superclass)
+        return self.ValidatorClass(type_str, type_builtin, superclass)
+
+
+class InstanceTypeValidator(StandardTypeValidator):
+    def validate(self, obj_str):
+        return isinstance(obj_str, codemodel.Instance)
+
+class InstanceValidatorFactory(StandardValidatorFactory):
+    ValidatorClass = InstanceTypeValidator
+    def __init__(self):
+        super().__init__(types_dict={
+            'instance': (lambda x: x.instance, codemodel.Instance)
+        })
+
+
+class InstanceListValidatorFactory(object):
+    def is_my_type(self, type_str):
+        return type_str == 'instance-list'
+
+    def create(self, type_str):
+        class InstanceListTypeValidator(TypeValidator):
+            def __init__(self):
+                super().__init__('instance-list', 'instance-list')
+
+            def validate(self, obj_str):
+                try:
+                    aslist = list(obj_str)
+                except:
+                    # if that didn't work, it isn't our thing
+                    return False
+                return all(isinstance(obj, codemodel.Instance)
+                           for obj in aslist)
+
+            def _to_instance(self, obj_str):
+                # here obj_str is a list of instances
+                print("doing to_instance")
+                return [obj.instance for obj in obj_str]
+
+            def _to_ast(self, obj_str):
+                # TODO
+                pass
+
+        return InstanceListTypeValidator()
+
+
