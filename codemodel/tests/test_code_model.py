@@ -41,6 +41,15 @@ class SectionsExample(object):
         outputs=['data']
     )
 
+    parameter = codemodel.Parameter(
+        parameter=inspect.Parameter(
+            name="num",
+            kind=inspect.Parameter.POSITIONAL_OR_KEYWORD
+        ),
+        param_type='int',
+        desc="input number"
+    )
+
     @staticmethod
     def prepare_data(num):
         data = []
@@ -219,7 +228,14 @@ class TestCodeModel(object):
         ),
     ])
     def test_set_ast_sections_with_setup(self, setup, ast_sections, label):
-        sections_param = ...  #TODO
+        sections_param = codemodel.Parameter(
+            parameter=inspect.Parameter(
+                name="num",
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD
+            ),
+            param_type='int',
+            desc="input number"
+        )
         name, param = {
             'exists_setup': ("exists_setup", self.exists_param),
             'sections': ("sections_example", sections_param),
@@ -253,7 +269,7 @@ class TestCodeModel(object):
                  50: SectionsExample.make_counter,
                  70: SectionsExample.after_making}
         ast_sections = {70: SectionsExample.after_making_ast}
-        param = ... #TODO
+        param = SectionsExample.parameter
         model = CodeModel("mix_setup_ast", [param], None, setup, ast_sections)
         expected_partial = {
             10: functools.partial(asttools.return_dict_func_to_ast_body,
@@ -271,7 +287,7 @@ class TestCodeModel(object):
         assert model._ast_funcs[70] == ast_sections[70]
 
     def test_set_ast_section_ast(self):
-        param = ... #TODO
+        param = SectionsExample.parameter
         setup = {10: SectionsExample.prepare_data,
                  50: SectionsExample.make_counter,
                  70: SectionsExample.after_making}
@@ -302,7 +318,8 @@ class TestCodeModel(object):
         with pytest.raises(ValueError):
             CodeModel._call_func_order(setup)
 
-    # instantiate and code_sections are testing in TestInstance
+    # instantiate, param_dict validation, and code_sections are testing in
+    # TestInstance
 
 class TestInstance(object):
     def setup(self):
@@ -346,7 +363,7 @@ class TestInstance(object):
             'os.path.exists': {'path': __file__},
             # TODO: these should be strings, but need to fix up move type
             # validation back into instantiation for that
-            'pass_through': {'num': 3, 'power': 2},
+            'pass_through': {'num': '3', 'power': '2'},
         }
         self.expected = {
             'os.path.exists': True,
@@ -383,6 +400,16 @@ class TestInstance(object):
         instance = instance_obj.instance
         assert instance == self.expected[model_name]
         assert instance is instance_obj.instance  # idempotency
+
+    @pytest.mark.parametrize("model_name", [
+        'os.path.exists', 'pass_through',
+    ])
+    def test_model_validation(self, model_name):
+        # test this here because it has the param_dict; this may need to
+        # be restructured
+        model = self.models[model_name]
+        param_dict = self.param_dict[model_name]
+        assert model.validate_param_dict(param_dict)
 
     def test_code_name(self):
         model_name = 'os.path.exists'

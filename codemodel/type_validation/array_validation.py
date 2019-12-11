@@ -105,7 +105,7 @@ class ArrayTypeValidator(TypeValidator):
 # as a class (give it a need for an __init__)
 class ArrayValidatorFactory(object):
     def is_my_type(self, type_str):
-        return is_array_type()
+        return is_array_type(type_str)
 
     def create(self, type_str):
         return ArrayTypeValidator(type_str)

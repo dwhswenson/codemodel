@@ -59,6 +59,9 @@ class CodeModel(object):
         self.parameters = parameters
         self.package = package
 
+        # used internally as a convenience
+        self._name_to_param = {p.name: p for p in self.parameters}
+
         self.setup = self._set_setup(setup, package)
         if self.package and self.setup == {50: self.func}:
             self._pre_call, self._main_call, self._post_call = \
@@ -251,17 +254,17 @@ class CodeModel(object):
             assert self.validator[p_type].validate(param_dict[p])
         return param_dict
 
-        instances = {
-            param: self.validator[param_type[param]].to_instance(value)
-            for param, value in param_dict.items()
-        }
-        return instances
-
     def instance_ast_sections(self, instance):
         # TODO: add the to_ast function
         params = dict(instance.param_dict)
-        params_ast = {name: to_ast(param)
-                      for name, param in instance.param_dict.items()}
+        validators = {
+            name: self.validator[self._name_to_param[name].param_type]
+            for name in params
+        }
+        params_ast = {
+            name: validators[name].to_ast(param)
+            for name, param in instance.param_dict.items()
+        }
         ast_sections = {}
         ast_funcs = self._ast_funcs
         print(params_ast)

@@ -18,16 +18,6 @@ class Instance(object):
                            for p in self.code_model.parameters}
         self._instance = None
 
-    def param_dict_validation(self, **instance_kwargs):
-        # instance_kwargs are extra kwargs needed to instantiate that don't
-        # come directly from user input (like stuff built in the dag)
-        param_dict = dict(**self.param_dict, **instance_kwargs)
-        for p in param_dict:
-            ptype = self.param_type.get(p, 'instance')
-            # TODO: switch from assert
-            assert self.code_model.validator[p_type].validate(param_dict[p])
-        return param_dict
-
     @property
     def instance(self):
         """functional version of the instance this represents"""
