@@ -1,8 +1,7 @@
 from .type_validation import (
     CodeModelTypeError, TypeValidation, TypeValidator,
     StandardTypeValidator, STANDARD_TYPES_DICT, ValidatorFactory,
-    StandardValidatorFactory, InstanceValidatorFactory,
-    InstanceListValidatorFactory
+    StandardValidatorFactory, InstanceValidatorFactory
 )
 
 try:
