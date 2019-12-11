@@ -105,4 +105,25 @@ class TestArrayTypeValidator(object):
 
         for case in not_valid:
             assert not validator.is_valid(self.arrays[case])
-        pass
+
+class TestArrayValidatorFactory(object):
+    def setup(self):
+        self.type_str = {'good': 'array((2,), int)',
+                         'bad': 'foo'}
+        self.inputs = {'good': '[1, 2]',
+                       'bad': '[1]'}
+        self.result = {'good': True, 'bad': False}
+        self.factory = ArrayValidatorFactory()
+
+    @pytest.mark.parametrize("key", ["good", "bad"])
+    def test_is_array_type(self, key):
+        assert self.factory.is_my_type(self.type_str[key]) is self.result[key]
+
+    @pytest.mark.parametrize("key", ["good", "bad"])
+    def test_create(self, key):
+        validator = self.factory.create(self.type_str["good"])
+        assert validator.validate(self.inputs[key]) is self.result[key]
+
+    def test_nonsense_crate(self):
+        with pytest.raises(CodeModelTypeError):
+            self.factory.create("foo")

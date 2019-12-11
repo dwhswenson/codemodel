@@ -282,13 +282,3 @@ class CodeModel(object):
         """ """
         return {k: astor.to_source(v) for
                 k, v in self.instance_ast_sections(instance).items()}
-
-def to_ast(obj):
-    if isinstance(obj, codemodel.Instance):
-        node = ast.Name(id=obj.code_name, ctx=ast.Load())
-    else:
-        # TODO: this can probably be improved
-        node = ast.parse(repr(obj), mode='eval').body
-    return node
-
-
