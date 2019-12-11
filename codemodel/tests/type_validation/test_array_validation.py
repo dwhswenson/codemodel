@@ -108,6 +108,7 @@ class TestArrayTypeValidator(object):
 
 class TestArrayValidatorFactory(object):
     def setup(self):
+        _ = pytest.importorskip("numpy")
         self.type_str = {'good': 'array((2,), int)',
                          'bad': 'foo'}
         self.inputs = {'good': '[1, 2]',
