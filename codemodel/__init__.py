@@ -10,7 +10,8 @@ from . import dag
 from . import type_validation
 
 
-from .code_model import CodeModel, Instance
+from .instance import Instance
+from .code_model import CodeModel
 from .json_stack import Parameter, Package, load_json
 from .generate_json import make_package, codemodel_from_callable
 

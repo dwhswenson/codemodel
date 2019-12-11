@@ -1,6 +1,7 @@
 import collections
 import numbers
 import ast
+import codemodel
 
 class CodeModelTypeError(TypeError):
     pass
@@ -127,6 +128,7 @@ ValidatorFactory = collections.namedtuple(
 )
 
 class StandardValidatorFactory(object):
+    ValidatorClass = StandardTypeValidator
     def __init__(self, types_dict):
         self.types_dict = types_dict
 
@@ -135,4 +137,19 @@ class StandardValidatorFactory(object):
 
     def create(self, type_str):
         type_builtin, superclass = self.types_dict[type_str]
-        return StandardTypeValidator(type_str, type_builtin, superclass)
+        return self.ValidatorClass(type_str, type_builtin, superclass)
+
+
+class InstanceTypeValidator(StandardTypeValidator):
+    def validate(self, obj_str):
+        return isinstance(obj_str, codemodel.Instance)
+
+    def _to_ast(self, obj_str):
+        pass  # TODO
+
+class InstanceValidatorFactory(StandardValidatorFactory):
+    ValidatorClass = InstanceTypeValidator
+    def __init__(self):
+        super().__init__(types_dict={
+            'instance': (lambda x: x.instance, codemodel.Instance)
+        })
