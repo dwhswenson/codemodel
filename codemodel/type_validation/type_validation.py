@@ -145,7 +145,7 @@ class InstanceTypeValidator(StandardTypeValidator):
         return isinstance(obj_str, codemodel.Instance)
 
     def _to_ast(self, obj_str):
-        pass  # TODO
+        return ast.Name(id=obj_str.code_name, ctx=ast.Load())
 
 class InstanceValidatorFactory(StandardValidatorFactory):
     ValidatorClass = InstanceTypeValidator

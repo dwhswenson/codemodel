@@ -83,7 +83,14 @@ def get_args_kwargs(func, param_dict):
     args = [param_dict[p] for p in as_pos]
     if var_pos:
         args += param_dict[var_pos]
-    kwargs = {p: param_dict[p] for p in as_kw}
+    kwargs = {}
+    for p in as_kw:
+        try:
+            param = param_dict[p]
+        except KeyError:
+            pass  # use default -- TODO: check that there is one?
+        else:
+            kwargs.update({p: param})
     if var_kw:
         kwargs.update(param_dict[var_kw])
     inspect.signature(func).bind(*args, **kwargs)  # just to test it
