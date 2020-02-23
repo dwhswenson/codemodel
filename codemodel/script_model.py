@@ -19,20 +19,6 @@ def get_instance_dependencies(instance):
         # elif ismappable, isiterable
     return dependencies
 
-# TODO: move ScriptErrors to its own file, with validator_functions
-# * validate_ast_parse
-# * validate_no_unknown_names
-class ScriptErrors(object):
-    def __init__(self, validator_functions):
-        self.validator_functions = validator_functions
-
-    def __call__(self, script):
-        errors = [func(script) for func in self.validator_functions]
-        if sum(errors):
-            return errors
-        else:
-            return False
-
 class BlackFormatter(object):
     def __init__(self, mode=None):
         if mode is None:

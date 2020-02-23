@@ -15,7 +15,7 @@ from .code_model import CodeModel
 from .json_stack import Parameter, Package, load_json
 from .generate_json import make_package, codemodel_from_callable
 
-from .script_model import ScriptErrors, ScriptModel
+from .script_model import ScriptModel
 
 # docstring helpers aren't required
 try:

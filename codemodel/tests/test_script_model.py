@@ -106,3 +106,15 @@ class TestScriptModel(object):
         script_model = self._make_model(is_reversed=False)
         script_model.pre_block_hooks = [pre_hook]
         assert script_model.draft_script() == expected
+
+def test_isort_formatter():
+    formatter = ISortFormatter()
+    input_code = "import sys\nprint('foo')\nimport os"
+    output_code = "import os\nimport sys\n\nprint('foo')\n"
+    assert formatter(input_code) == output_code
+
+def test_black_formatter():
+    formatter = BlackFormatter()
+    input_code = "print ('foo')\nbar=baz(qux = 4)"
+    output_code = "print(\"foo\")\nbar = baz(qux=4)\n"
+    assert formatter(input_code) == output_code
