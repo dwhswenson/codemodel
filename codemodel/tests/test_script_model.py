@@ -25,20 +25,21 @@ def test_get_instance_dependencies(case):
     assert deps == expected
 
 def _code_model_alpha(list_of_objs, is_reversed=False):
-    ordered = list(sorted(list_of_objs, key=lambda x: str(x.code_model)))
+    ordered = list(sorted(list_of_objs,
+                          key=lambda x: str(x.code_model.name)))
     return ordered
 
 class TestScriptModel(object):
     def setup(self):
         foo = MagicMock(dependencies=[],
-                        code_model='c',
+                        code_model=MagicMock(package=None, name='a'),
                         code_sections={50: 'foo_50'})
         bar = MagicMock(dependencies=[foo],
-                        code_model='a',
+                        code_model=MagicMock(package=None, name='b'),
                         code_sections={10: 'bar_10', 50: 'bar_50',
                                        90: 'bar_90'})
         baz = MagicMock(dependencies=[foo],
-                        code_model='b',
+                        code_model=MagicMock(package=None, name='c'),
                         code_sections={10: 'baz_10', 50: 'baz_50'})
 
         self.instances = [foo, bar, baz]
@@ -84,13 +85,14 @@ class TestScriptModel(object):
                                k=len(self.ordered_blocks))
         ordered_blocks = self.script_model.order_blocks(blocks,
                                                         self.instance_order)
+
         assert ordered_blocks == self.ordered_blocks
 
     @patch("codemodel.script_model.get_instance_dependencies",
            lambda inst: inst.dependencies)
     def test_draft_script(self):
         script_model = self._make_model(is_reversed=False)
-        expected = "".join(b.code for b in self.ordered_blocks)
+        expected = "\n" + "".join(b.code for b in self.ordered_blocks)
         assert script_model.draft_script() == expected
 
     @patch("codemodel.script_model.get_instance_dependencies",
@@ -99,8 +101,8 @@ class TestScriptModel(object):
         def pre_hook(old, new):
             return "\n" if old and old.section != new.section else ""
 
-        expected = "\n".join(["bar_10baz_10", "foo_50bar_50baz_50",
-                              "bar_90"])
+        expected = "\n" + "\n".join(["bar_10baz_10", "foo_50bar_50baz_50",
+                                     "bar_90"])
         script_model = self._make_model(is_reversed=False)
         script_model.pre_block_hooks = [pre_hook]
         assert script_model.draft_script() == expected
