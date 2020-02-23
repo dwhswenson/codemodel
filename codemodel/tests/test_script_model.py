@@ -107,6 +107,7 @@ class TestScriptModel(object):
         script_model.pre_block_hooks = [pre_hook]
         assert script_model.draft_script() == expected
 
+
 def test_isort_formatter():
     formatter = ISortFormatter()
     input_code = "import sys\nprint('foo')\nimport os"

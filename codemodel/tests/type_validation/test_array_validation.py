@@ -1,4 +1,5 @@
 import pytest
+import astor
 
 try:
     import numpy as np
@@ -105,6 +106,14 @@ class TestArrayTypeValidator(object):
 
         for case in not_valid:
             assert not validator.is_valid(self.arrays[case])
+
+    def test_to_ast(self):
+        name = 'int_2'
+        validator = self.validators[name]
+        input_str = self.inputs[name]
+        expected = "np.array([1, 2], dtype='int64')\n"
+        tree = validator.to_ast(input_str)
+        assert astor.to_source(tree) == expected
 
 class TestArrayValidatorFactory(object):
     def setup(self):

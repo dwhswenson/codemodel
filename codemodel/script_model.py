@@ -31,7 +31,7 @@ class BlackFormatter(object):
 
 class ISortFormatter(object):
     # this is a class in order to allow configuration in the future
-    def __call__(self, script):
+   def __call__(self, script):
         return isort.SortImports(file_contents=script).output
 
 
@@ -123,8 +123,9 @@ class ScriptModel(object):
 
         return script
 
-    def get_script(self):
+    def get_script(self):  # no-cover
         """Generate the formatted Python script."""
+        # so trivial that we don't include in tests
         script = self.draft_script()
         for formatter in self.formatters:
             script = formatter(script)
