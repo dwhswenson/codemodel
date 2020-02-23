@@ -250,23 +250,30 @@ class CodeModel(object):
         param_dict = dict(**param_dict, **instance_kwargs)
         for p in param_dict:
             p_type = param_type.get(p, 'instance')
+            # TODO: this stuff should actually raise an error that we can
+            # catch (and that is informative about the problem)
+            print(p, p_type, param_dict[p])
             assert self.validator[p_type].validate(param_dict[p])
         return param_dict
 
     def instance_ast_sections(self, instance):
-        # TODO: add the to_ast function
         params = dict(instance.param_dict)
+        # print(list(instance.param_dict.items()))
         validators = {
             name: self.validator[self._name_to_param[name].param_type]
-            for name in params
+            for name in params if name in self._name_to_param
         }
+        validators.update({
+            name: self.validator['instance']
+            for name in params if name not in self._name_to_param
+        })
         params_ast = {
             name: validators[name].to_ast(param)
             for name, param in instance.param_dict.items()
         }
         ast_sections = {}
         ast_funcs = self._ast_funcs
-        print(params_ast)
+        # print(params_ast)
         for sec_id, func in self.setup.items():
             if func == self._main_call:
                 sec_ast = ast_funcs[sec_id](param_ast_dict=params_ast,
