@@ -32,7 +32,7 @@ class BlackFormatter(object):
 class ISortFormatter(object):
     # this is a class in order to allow configuration in the future
    def __call__(self, script):
-        return isort.SortImports(file_contents=script).output
+       return isort.code(code=script)
 
 
 class ScriptModel(object):
