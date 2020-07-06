@@ -110,8 +110,8 @@ class TestScriptModel(object):
 
 def test_isort_formatter():
     formatter = ISortFormatter()
-    input_code = "import sys\nprint('foo')\nimport os"
-    output_code = "import os\nimport sys\n\nprint('foo')\n"
+    input_code = "import sys\nimport os\n"
+    output_code = "import os\nimport sys\n"
     assert formatter(input_code) == output_code
 
 def test_black_formatter():
