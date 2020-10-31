@@ -105,7 +105,6 @@ class StandardTypeValidator(TypeValidator):
         return isinstance(obj, self.superclass)
 
 
-
 # def type_str_is_my_type(my_type_str):
     # def is_my_type(type_str):
         # return type_str == my_type_str
@@ -118,6 +117,7 @@ class StandardTypeValidator(TypeValidator):
 
 # TODO: move these to a separate file
 STANDARD_TYPES_DICT = {
+    # maps string to (builtin_func, superclass)
     'int': (int, numbers.Integral),
     'float': (float, numbers.Real),
     'str': (str, str),
@@ -138,6 +138,35 @@ class StandardValidatorFactory(object):
     def create(self, type_str):
         type_builtin, superclass = self.types_dict[type_str]
         return self.ValidatorClass(type_str, type_builtin, superclass)
+
+
+class BoolValidator(object):
+    """Validator for true booleans (where input is True/False, not string).
+
+    Mix-in the factory functionality here, too.
+    """
+    def __init__(self):
+        self.name = 'bool'
+        self.regularized_name = 'bool'
+
+    def to_instance(self, input_val):
+        return input_val
+
+    def to_ast(self, input_val):
+        return ast.NameConstant(input_val)
+
+    def is_valid(self, obj):
+        # do this in case we get a np.True/False
+        return obj == True or obj == False
+
+    def validate(self, obj):
+        return self.is_valid(obj)
+
+    def is_my_type(self, type_str):
+        return type_str == 'bool'
+
+    def create(self, type_str):
+        return self
 
 
 class InstanceTypeValidator(StandardTypeValidator):
