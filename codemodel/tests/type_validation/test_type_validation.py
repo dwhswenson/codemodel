@@ -100,3 +100,36 @@ class TestStringValidation(ValidatorTester):
 
     def test_raises_error(self):
         pass  # strings don't raise errors!
+
+class TestBoolValidation(ValidatorTester):
+    def setup(self):
+        self.factory = BoolValidator()
+        self.validator = self.factory
+        self.type_str = 'bool'
+        self.good_values = [True, False]
+        try:
+            import numpy as np
+        except ImportError:
+            pass
+        else:
+            self.good_values.extend([np.True_, np.False_])
+        self.bad_values = ['True', 'False']
+        self.obj = True
+
+    def test_ast(self):
+        # AST for bools changes in various Pythons; ast.Name,
+        # ast.NameConstant, ast.Constant. So we ask for whatever this Python
+        # version gives.
+        expected = ast.parse('True').body[0].value
+        result = self.validator.to_ast(True)
+        assert result.value == expected.value
+
+    def test_raises_error(self):
+        pass  # this one doesn't actually raise an error
+
+    def test_create(self):
+        assert self.factory.create('bool') == self.validator
+
+    def test_to_instance(self):
+        for inst in [True, False]:
+            assert self.validator.to_instance(inst) == inst

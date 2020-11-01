@@ -28,7 +28,8 @@ class GenericFunctionAST(typing.NamedTuple):
 class CodeModel(object):
     validator = codemodel.type_validation.TypeValidation(
         codemodel.type_validation.DEFAULT_EXTERNAL_TYPE_FACTORIES
-        + [codemodel.type_validation.InstanceValidatorFactory()]
+        + [codemodel.type_validation.InstanceValidatorFactory(),
+           codemodel.type_validation.BoolValidator()]
     )
     """Model for a callable.
 
