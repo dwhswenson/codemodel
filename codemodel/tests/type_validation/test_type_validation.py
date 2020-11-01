@@ -104,7 +104,7 @@ class TestStringValidation(ValidatorTester):
 class TestBoolValidation(ValidatorTester):
     def setup(self):
         self.factory = BoolValidator()
-        self.validator = BoolValidator()
+        self.validator = self.factory
         self.type_str = 'bool'
         self.good_values = [True, False]
         try:
@@ -126,3 +126,10 @@ class TestBoolValidation(ValidatorTester):
 
     def test_raises_error(self):
         pass  # this one doesn't actually raise an error
+
+    def test_create(self):
+        assert self.factory.create('bool') == self.validator
+
+    def test_to_instance(self):
+        for inst in [True, False]:
+            assert self.validator.to_instance(inst) == inst
