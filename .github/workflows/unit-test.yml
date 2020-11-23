@@ -1,0 +1,63 @@
+name: "Unit tests"
+on:
+  pull_request:
+    branches:
+      - master
+      - stable
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+  schedule:
+    - cron: "25 5 * * *"
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  test_suite:
+    runs-on: ubuntu-latest
+    name: Tests
+    strategy:
+      matrix:
+        CONDA_PY:
+          - 3.9
+          - 3.8
+          - 3.7
+        CODEMODEL_EXTRAS: [""]
+        include:
+          - CONDA_PY: 3.8
+            CODEMODEL_EXTRAS: "Extras"
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.CONDA_PY }}
+      - name: "Install"
+        env:
+            CODEMODEL_EXTRAS: ${{ matrix.CODEMODEL_EXTRAS }}
+        run: |
+          conda install pip
+          python -m pip install -e .
+          if [ -n "$CODEMODEL_EXTRAS" ]; then
+            pip install -r ./devtools/extras.txt;
+          fi
+          pip install -r ./devtools/tests_require.txt
+      - name: "Versions"
+        run: pip list
+      - name: "Tests"
+        env:
+          BRANCH: "${{github.event.pull_request.base.ref}}${{github.event.push.ref}}"
+          EVENT: ${{ github.event_name }}
+        run: |
+          python -c "import codemodel"
+          python autorelease_check.py --branch $BRANCH --event $EVENT
+          py.test -vv --cov=codemodel --cov-report xml:cov.xml
+      - name: "Report coverage"
+        run: bash <(curl -s https://codecov.io/bash)
+
