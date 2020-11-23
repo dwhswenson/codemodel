@@ -22,13 +22,14 @@ jobs:
     name: Tests
     strategy:
       matrix:
+        CODEMODEL_EXTRAS: [false]
         CONDA_PY:
           - 3.9
           - 3.8
           - 3.7
         include:
           - CONDA_PY: 3.8
-            codemodel_extras: true
+            CODEMODEL_EXTRAS: true
 
     steps:
       - uses: actions/checkout@v2
@@ -38,6 +39,8 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.CONDA_PY }}
       - name: "Install"
+        env:
+            CODEMODEL_EXTRAS: ${{ matrix.CODEMODEL_EXTRAS }}
         run: |
           conda install pip
           python -m pip install -e .
