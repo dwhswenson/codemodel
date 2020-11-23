@@ -27,8 +27,8 @@ jobs:
           - 3.8
           - 3.7
         include:
-          CONDA_PY: 3.8
-          codemodel_extras: true
+          - CONDA_PY: 3.8
+            codemodel_extras: true
 
     steps:
       - uses: actions/checkout@v2
