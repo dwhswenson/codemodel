@@ -22,14 +22,14 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        CODEMODEL_EXTRAS: [false]
         CONDA_PY:
           - 3.9
           - 3.8
           - 3.7
+        CODEMODEL_EXTRAS: [""]
         include:
           - CONDA_PY: 3.8
-            CODEMODEL_EXTRAS: true
+            CODEMODEL_EXTRAS: "Extras"
 
     steps:
       - uses: actions/checkout@v2
