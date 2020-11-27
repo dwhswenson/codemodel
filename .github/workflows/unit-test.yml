@@ -1,4 +1,4 @@
-name: "Unit tests"
+name: "Tests"
 on:
   pull_request:
     branches:
@@ -19,7 +19,7 @@ defaults:
 jobs:
   test_suite:
     runs-on: ubuntu-latest
-    name: Tests
+    name: "Unit Tests"
     strategy:
       matrix:
         CONDA_PY:
@@ -52,9 +52,15 @@ jobs:
         run: pip list
       - name: "Tests"
         env:
-          BRANCH: "${{github.event.pull_request.base.ref}}${{github.event.push.ref}}"
+          PR_BRANCH: ${{ github.event.pull_request.base.ref }}
+          REF: ${{ github.ref }}
           EVENT: ${{ github.event_name }}
         run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            BRANCH=$REF
+          else
+            BRANCH=$PR_BRANCH
+          fi
           python -c "import codemodel"
           python autorelease_check.py --branch $BRANCH --event $EVENT
           py.test -vv --cov=codemodel --cov-report xml:cov.xml
