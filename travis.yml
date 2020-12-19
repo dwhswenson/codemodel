@@ -1,0 +1,49 @@
+version: ~> 1.0
+
+language: python
+
+notifications:
+  webhooks: https://coveralls.io/webhook
+
+branches:
+  only:
+  - master
+  - stable
+  - /^v\d+(\.\d+)+/
+
+env:
+  global:
+    - CANONICAL_PYTHON="3.8"
+    - CODECLIMATE=""
+    - TWINE_USERNAME="dwhswenson"
+  matrix:
+    - CONDA_PY=3.6
+    - CONDA_PY=3.7
+    - CONDA_PY=3.8
+    - CONDA_PY=3.6  CODEMODEL_EXTRAS=true
+
+before_install:
+  - echo "before install"
+  - git fetch --tags
+
+install:
+  # we use conda to manage Python versions, but all the install is pip
+  - source ./devtools/miniconda_install.sh
+  - conda create --yes -n codemodel-py${CONDA_PY} python=$CONDA_PY
+  - source activate codemodel-py${CONDA_PY}
+  - pip install -e .
+  - if [ -n "$CODEMODEL_EXTRAS" ]; then pip install -r ./devtools/extras.txt; fi
+  - pip install -r ./devtools/tests_require.txt
+  - pip list
+
+script:
+  - python -c "import codemodel"
+  - python autorelease_check.py --branch ${TRAVIS_BRANCH} --event ${TRAVIS_EVENT_TYPE} #--allow-patch-skip  # allow-patch-skip if there was a testpypi problem
+  - py.test -vv --cov=codemodel --cov-report xml:cov.xml
+
+after_success:
+  - COVERALLS_PARALLEL=true coveralls
+
+# TODO: (1) autorelease should bundle these; (2) pin to autorelease version
+import:
+  - dwhswenson/autorelease:autorelease-travis.yml@v0.1.0

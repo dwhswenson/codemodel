@@ -1,6 +1,7 @@
 import collections
 import numbers
 import ast
+import codemodel
 
 class CodeModelTypeError(TypeError):
     pass
@@ -104,7 +105,6 @@ class StandardTypeValidator(TypeValidator):
         return isinstance(obj, self.superclass)
 
 
-
 # def type_str_is_my_type(my_type_str):
     # def is_my_type(type_str):
         # return type_str == my_type_str
@@ -117,6 +117,7 @@ class StandardTypeValidator(TypeValidator):
 
 # TODO: move these to a separate file
 STANDARD_TYPES_DICT = {
+    # maps string to (builtin_func, superclass)
     'int': (int, numbers.Integral),
     'float': (float, numbers.Real),
     'str': (str, str),
@@ -127,6 +128,7 @@ ValidatorFactory = collections.namedtuple(
 )
 
 class StandardValidatorFactory(object):
+    ValidatorClass = StandardTypeValidator
     def __init__(self, types_dict):
         self.types_dict = types_dict
 
@@ -135,4 +137,48 @@ class StandardValidatorFactory(object):
 
     def create(self, type_str):
         type_builtin, superclass = self.types_dict[type_str]
-        return StandardTypeValidator(type_str, type_builtin, superclass)
+        return self.ValidatorClass(type_str, type_builtin, superclass)
+
+
+class BoolValidator(object):
+    """Validator for true booleans (where input is True/False, not string).
+
+    Mix-in the factory functionality here, too.
+    """
+    def __init__(self):
+        self.name = 'bool'
+        self.regularized_name = 'bool'
+
+    def to_instance(self, input_val):
+        return input_val
+
+    def to_ast(self, input_val):
+        return ast.NameConstant(input_val)
+
+    def is_valid(self, obj):
+        # do this in case we get a np.True/False
+        return obj == True or obj == False
+
+    def validate(self, obj):
+        return self.is_valid(obj)
+
+    def is_my_type(self, type_str):
+        return type_str == 'bool'
+
+    def create(self, type_str):
+        return self
+
+
+class InstanceTypeValidator(StandardTypeValidator):
+    def validate(self, obj_str):
+        return isinstance(obj_str, codemodel.Instance)
+
+    def _to_ast(self, obj_str):
+        return ast.Name(id=obj_str.code_name, ctx=ast.Load())
+
+class InstanceValidatorFactory(StandardValidatorFactory):
+    ValidatorClass = InstanceTypeValidator
+    def __init__(self):
+        super().__init__(types_dict={
+            'instance': (lambda x: x.instance, codemodel.Instance)
+        })

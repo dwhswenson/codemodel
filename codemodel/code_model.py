@@ -1,5 +1,6 @@
 import ast
 import functools
+import collections
 import importlib
 import typing
 
@@ -23,7 +24,13 @@ class GenericFunctionAST(typing.NamedTuple):
     inputs: typing.List[str]
     outputs: typing.List[str]
 
+
 class CodeModel(object):
+    validator = codemodel.type_validation.TypeValidation(
+        codemodel.type_validation.DEFAULT_EXTERNAL_TYPE_FACTORIES
+        + [codemodel.type_validation.InstanceValidatorFactory(),
+           codemodel.type_validation.BoolValidator()]
+    )
     """Model for a callable.
 
     In simple cases, all you need is an instance of this for each
@@ -51,6 +58,9 @@ class CodeModel(object):
         self.name = name
         self.parameters = parameters
         self.package = package
+
+        # used internally as a convenience
+        self._name_to_param = {p.name: p for p in self.parameters}
 
         self.setup = self._set_setup(setup, package)
         if self.package and self.setup == {50: self.func}:
@@ -201,36 +211,76 @@ class CodeModel(object):
         """
         setup = self.setup if self.setup else {50: self.func}
 
-        func_param_dict = dict(instance.param_dict)  # copy
+        param_type = collections.defaultdict(lambda: 'instance')
+        param_type.update({p.name: p.param_type for p in self.parameters})
+        func_param_dict = {
+            param: self.validator[param_type[param]].to_instance(value)
+            for param, value in instance.param_dict.items()
+        }
+
+        def run_return_dict_func(func, func_param_dict):
+            print(func, func_param_dict)
+            args, kwargs = asttools.get_args_kwargs(func, func_param_dict)
+            passthrough = asttools.get_unused_params(func, func_param_dict)
+            func_param_dict = func(*args, **kwargs)
+            func_param_dict.update(passthrough)
+            return func_param_dict
 
         for func in self._pre_call:
-            # TODO: fix this for positional arguments
-            func_param_dict = func(**func_param_dict)
+            # func_param_dict = func(**func_param_dict)
+            func_param_dict = run_return_dict_func(func, func_param_dict)
 
-        obj = self._main_call(**func_param_dict)
+        args, kwargs = asttools.get_args_kwargs(self._main_call,
+                                                func_param_dict)
+        obj = self._main_call(*args, **kwargs)
 
         for func in self._post_call:
-            func_param_dict = func(**func_param_dict)
+            func_param_dict = run_return_dict_func(func, func_param_dict)
 
         return obj
 
-    def _default_setup_ast(self, param_dict, assign=None):
-        return asttools.create_call_ast(self.func, param_dict,
+    def _default_setup_ast(self, param_ast_dict, assign=None):
+        return asttools.create_call_ast(self.func, param_ast_dict,
                                         assign=assign,
                                         prefix=self.package.implicit_prefix)
 
+
+    def validate_param_dict(self, param_dict, **instance_kwargs):
+        param_type = {p.name: p.param_type for p in self.parameters}
+        param_type.update({p: 'instance' for p in instance_kwargs})
+        param_dict = dict(**param_dict, **instance_kwargs)
+        for p in param_dict:
+            p_type = param_type.get(p, 'instance')
+            # TODO: this stuff should actually raise an error that we can
+            # catch (and that is informative about the problem)
+            print(p, p_type, param_dict[p])
+            assert self.validator[p_type].validate(param_dict[p])
+        return param_dict
+
     def instance_ast_sections(self, instance):
-        # TODO: add the to_ast function
         params = dict(instance.param_dict)
-        params_ast = {name: to_ast(param)
-                      for name, param in instance.param_dict.items()}
+        # print(list(instance.param_dict.items()))
+        validators = {
+            name: self.validator[self._name_to_param[name].param_type]
+            for name in params if name in self._name_to_param
+        }
+        validators.update({
+            name: self.validator['instance']
+            for name in params if name not in self._name_to_param
+        })
+        params_ast = {
+            name: validators[name].to_ast(param)
+            for name, param in instance.param_dict.items()
+        }
         ast_sections = {}
         ast_funcs = self._ast_funcs
+        # print(params_ast)
         for sec_id, func in self.setup.items():
             if func == self._main_call:
-                sec_ast = ast_funcs[sec_id](params_ast, assign=instance.name)
+                sec_ast = ast_funcs[sec_id](param_ast_dict=params_ast,
+                                            assign=instance.name)
             else:
-                sec_ast = ast_funcs[sec_id](params_ast)
+                sec_ast = ast_funcs[sec_id](param_ast_dict=params_ast)
             ast_sections[sec_id] = sec_ast
 
         return ast_sections
@@ -239,55 +289,3 @@ class CodeModel(object):
         """ """
         return {k: astor.to_source(v) for
                 k, v in self.instance_ast_sections(instance).items()}
-
-
-def to_ast(obj):
-    if isinstance(obj, Instance):
-        node = ast.Name(id=obj.code_name, ctx=ast.Load())
-    else:
-        # TODO: this can probably be improved
-        node = ast.parse(repr(obj), mode='eval').body
-    return node
-
-
-class Instance(object):
-    validator = codemodel.type_validation.DEFAULT_VALIDATOR
-    """Representation of an instance (noun-like object) in the source.
-
-    In particular, this gives us access to the important values:
-
-    Parameters
-    ----------
-    """
-    def __init__(self, name, code_model, param_dict):
-        self.name = name
-        self._code_name = None
-        self.code_model = code_model
-        self.param_dict = param_dict
-        self._instance = None
-
-    @property
-    def instance(self):
-        """functional version of the instance this represents"""
-        if self._instance is None:
-            self._instance = self.code_model.instantiate(self)
-        return self._instance
-
-    @property
-    def code_name(self):
-        if self._code_name:
-            return self._code_name
-        else:
-            return self.name
-
-    @code_name.setter
-    def code_name(self, value):
-        self._code_name = value
-
-    @property
-    def code_sections(self):
-        """code for this instance, as a sections dictionary"""
-        return self.code_model.code_sections(self)
-
-    def __str__(self):  # no-cover
-        return self.code_name

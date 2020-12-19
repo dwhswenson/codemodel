@@ -1,7 +1,7 @@
 from .type_validation import (
     CodeModelTypeError, TypeValidation, TypeValidator,
     StandardTypeValidator, STANDARD_TYPES_DICT, ValidatorFactory,
-    StandardValidatorFactory
+    StandardValidatorFactory, InstanceValidatorFactory, BoolValidator,
 )
 
 try:
@@ -14,7 +14,5 @@ else:
     from . import array_validation as ndarray
     arr_factory = [ndarray.ArrayValidatorFactory()]
 
-
-DEFAULT_VALIDATOR = TypeValidation(
-    [StandardValidatorFactory(STANDARD_TYPES_DICT)] + arr_factory
-)
+DEFAULT_EXTERNAL_TYPE_FACTORIES = \
+        [StandardValidatorFactory(STANDARD_TYPES_DICT)] + arr_factory

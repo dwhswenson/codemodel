@@ -83,11 +83,37 @@ def get_args_kwargs(func, param_dict):
     args = [param_dict[p] for p in as_pos]
     if var_pos:
         args += param_dict[var_pos]
-    kwargs = {p: param_dict[p] for p in as_kw}
+    kwargs = {}
+    for p in as_kw:
+        try:
+            param = param_dict[p]
+        except KeyError:
+            pass  # use default -- TODO: check that there is one?
+        else:
+            kwargs.update({p: param})
     if var_kw:
         kwargs.update(param_dict[var_kw])
     inspect.signature(func).bind(*args, **kwargs)  # just to test it
     return args, kwargs
+
+def get_unused_params(func, param_dict):
+    """Return parameters in the param_dict that aren't inputs to func
+
+    Parameters
+    ----------
+    func : Callable[[Any], Any]
+    param_dict : Dict[str, Any]
+        mapping of the string parameter name to the associated value, where
+        the parameter name is as given in the func's definition.
+
+    Returns
+    -------
+    Dict[str, Any] :
+        parameters that aren't inputs to func
+    """
+    func_params = {p for p in inspect.signature(func).parameters}
+    unused = set(param_dict.keys()) - func_params
+    return {k: param_dict[k] for k in unused}
 
 def deindented_source(src):
     """De-indent source if all lines indented.
