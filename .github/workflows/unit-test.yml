@@ -56,13 +56,8 @@ jobs:
           REF: ${{ github.ref }}
           EVENT: ${{ github.event_name }}
         run: |
-          if [ "$EVENT" != "pull_request" ]; then
-            BRANCH=$REF
-          else
-            BRANCH=$PR_BRANCH
-          fi
           python -c "import codemodel"
-          python autorelease_check.py --branch $BRANCH --event $EVENT
+          python autorelease_check.py --branch $REF --event $EVENT
           py.test -vv --cov=codemodel --cov-report xml:cov.xml
       - name: "Report coverage"
         run: bash <(curl -s https://codecov.io/bash)
