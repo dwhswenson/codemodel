@@ -57,7 +57,7 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           python -c "import codemodel"
-          python autorelease_check.py --branch $REF --event $EVENT
+          python autorelease_check.py
           py.test -vv --cov=codemodel --cov-report xml:cov.xml
       - name: "Report coverage"
         run: bash <(curl -s https://codecov.io/bash)
