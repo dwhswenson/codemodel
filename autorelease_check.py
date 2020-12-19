@@ -22,6 +22,7 @@ if __name__ == "__main__":
         repo_path='.'
     )
     checker.release_branches = RELEASE_BRANCHES + [RELEASE_TAG]
+    print(checker.tag_branch)
 
-    tests = checker.select_tests_from_sysargs()
+    tests = checker.select_tests()
     n_fails = checker.run_as_test(tests)
